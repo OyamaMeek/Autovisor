@@ -12,4 +12,4 @@
 - Chrome 实际验证：不完整题目不会提交，手动关闭后继续；普通答题监控不会关闭融合弹窗。
 - ACP 实际完成初始化、会话建立、请求与消息接收；服务返回 `gpt-6.1-sol` 不支持当前 ChatGPT 账户，无法验证正确答案与自动提交。用户要求保留模型配置。
 - SDK 1.0.0 负责连接及子进程关闭，具备分阶段终止超时；没有单独验证长时间推理超时和强制终止场景。
-- `uv lock --check`、`git diff --check` 通过。没有配置独立类型检查或 lint，不新增检查工具。
+- `uv lock --check`、`git diff --check`、`uv run python Autovisor.py --help` 通过。没有配置独立类型检查或 lint，不新增检查工具。

@@ -34,6 +34,7 @@
 - **自动通过登录滑块验证(可选)**
 - **自动播放和切换下一集**
 - **自动跳过弹窗和弹题**
+- **通过本地 Codex ACP 作答普通课中题目与融合课随堂练习**
 - **自动静音、设置指定倍速**
 - **自动检测暂停并自动续播**
 - **支持智慧共享课、翻转课、融合共享课**
@@ -92,6 +93,29 @@ cp config.macos.ini.example config.macos.ini
 ```
 
 首次运行会自动部署环境 (安装 `uv`、依赖和必要的浏览器), 之后直接启动. 环境或配置变化时会自动重新部署, 也可用 `./run_macos.sh --setup` 强制重建.
+
+**本地 Codex ACP 答题**
+
+先安装 Node.js、Codex CLI 和 [Codex ACP 适配器](https://github.com/agentclientprotocol/codex-acp)，并完成登录：
+
+```bash
+npm install -g @openai/codex @agentclientprotocol/codex-acp@2.6.0
+codex login
+codex-acp --version
+```
+
+从能够找到 `codex-acp` 的终端启动 Autovisor。程序会将题干、可见选项通过 ACP 发送给本机 Codex，校验返回的选项编号后点击作答；融合练习随后点击提交，关闭弹窗后恢复播放。支持文本单选、多选与判断题。模型和认证沿用本机 Codex 配置，推理使用其配置的服务，并非离线模型。
+
+也可将适配器安装在项目内，并在启动时指定 PATH：
+
+```bash
+npm install --prefix .autovisor/acp @agentclientprotocol/codex-acp@2.6.0
+PATH="$PWD/.autovisor/acp/node_modules/.bin:$PATH" ./run_macos.sh
+```
+
+适配器需要 2.6.0 或以上版本，使用 ACP 消息编号区分模型答案与服务提示。每题调用上限 120 秒。缺少适配器、登录失效、模型不可用、超时或答案无效时，会保留题目并提示手动处理；手动关闭弹窗后继续。`studywisdomh5` 新版弹题、`hike` 课程和图片题尚未适配，仍需手动处理。
+
+验证命令：`uv run python -m unittest discover -s tests -v`。设置 `AUTOVISOR_TEST_BROWSER=1` 可运行真实 Chrome 行为测试；同时设置 `AUTOVISOR_TEST_CODEX_ACP=1` 可验证本机 Codex ACP 的真实答题调用（需要 Chrome、适配器及有效的 Codex 登录）。这些测试使用本地题目页面，不提交课程平台的答案。
 
 #### 四、发行版下载
 

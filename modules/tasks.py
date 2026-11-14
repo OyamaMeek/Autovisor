@@ -8,6 +8,7 @@ from modules.utils import get_video_attr, display_window, hide_window, run_on
 from playwright._impl._errors import TargetClosedError
 from modules.logger import Logger
 from modules.video_state import video_at_end
+from modules.answering import AnswerError, answer_question
 
 logger = Logger()
 
@@ -247,24 +248,27 @@ async def skip_questions(page: Page, event_loop) -> None:
                 logger.event("答题", 结果="跳过", 原因="课程版本不支持")
                 return
             await asyncio.sleep(2)
-            ques_element = await page.wait_for_selector(".el-scrollbar__view", state="attached", timeout=1000)
-            total_ques = await ques_element.query_selector_all(".number")
+            dialog = page.locator(".el-dialog:visible").filter(has=page.locator(".topic-item")).first
+            if not await dialog.count():
+                continue
+            total_ques = await dialog.locator(".el-scrollbar__view .number").all()
             if total_ques:
                 answered = 0
                 for ques in total_ques:
                     await ques.click(timeout=500)
-                    if not await page.query_selector(".answer"):
-                        choices = await page.query_selector_all(".topic-item")
-                        for each in choices[:2]:
-                            await each.click(timeout=500)
-                            await page.wait_for_timeout(100)
+                    if not await dialog.locator(".answer:visible").count():
+                        await answer_question(dialog, ".topic-item")
                         answered += 1
                 logger.event("课中答题", 题目数=len(total_ques), 已作答=answered)
-            await page.press(".el-dialog", "Escape", timeout=1000)
-            event_loop.set()
+                await dialog.press("Escape", timeout=1000)
+                event_loop.set()
         except TargetClosedError:
             logger.debug("浏览器已关闭, 答题模块停止运行.")
             return
+        except AnswerError as exc:
+            logger.warn(f"{exc}，请在浏览器中手动完成当前题目.", shift=True)
+            await dialog.wait_for(state="hidden", timeout=0)
+            event_loop.set()
         except Exception as e:
             if is_expected_polling_error(e):
                 logger.debug_throttled(
@@ -274,17 +278,9 @@ async def skip_questions(page: Page, event_loop) -> None:
                 )
             else:
                 logger.log_exception("答题模块执行失败.", e)
-            if "fusioncourseh5" in page.url:
-                not_finish_close = await page.query_selector(".el-dialog")
-                if not_finish_close:
-                    await page.press(".el-dialog", "Escape", timeout=1000)
-            elif "hike.zhihuishu.com" in page.url:
+            if "hike.zhihuishu.com" in page.url:
                 logger.warn("当前课程为新版本,不支持自动答题.", shift=True)
                 return
-            else:
-                not_finish_close = await page.query_selector(".el-message-box__headerbtn")
-                if not_finish_close:
-                    await not_finish_close.click()
             continue
 
 

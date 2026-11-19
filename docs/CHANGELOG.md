@@ -261,6 +261,6 @@
   - `config.ini.example`、`config.macos.ini.example`、`resources/`、`.gitignore`、`build.py`、`.github/workflows/release.yml`
   - `pyproject.toml`、`uv.lock`、`tests/`、`memory/`、`docs/CHANGELOG.md`
 
-- **Git 提交** 待提交。
+- **Git 提交** `741481d05ba6895a5b6a48a63f5e214f0798b6d1 chore: update project maintainer attribution`，已推送 `origin/main`。
 
 ---

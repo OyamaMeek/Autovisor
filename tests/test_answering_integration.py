@@ -1,18 +1,20 @@
 import asyncio
 import contextlib
+import io
 import json
 import os
 import threading
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 from unittest.mock import patch
 
 from playwright.async_api import TimeoutError, async_playwright
 
 from Autovisor import run_exam_mode
-from modules.answering import AnswerError, answer_question
+from modules.answering import AnswerError, answer_question, ask_deepseek
 from modules.browser import BrowserSession
 from modules.exam_answering import fill_exam, watch_exam_pages
 from modules.fusion_adapter import FusionAdapter
@@ -38,14 +40,16 @@ class _DeepSeekHandler(BaseHTTPRequestHandler):
         pass
 
 
-@unittest.skipUnless(os.environ.get("AUTOVISOR_TEST_BROWSER") == "1", "需要显式启用真实浏览器测试")
-class BrowserAnswerTests(unittest.IsolatedAsyncioTestCase):
-    async def asyncSetUp(self):
-        self.playwright = await async_playwright().start()
-        self.addAsyncCleanup(self.playwright.stop)
-        self.browser = await self.playwright.chromium.launch(channel="chrome", headless=True)
-        self.addAsyncCleanup(self.browser.close)
-        self.page = await self.browser.new_page()
+class _DeepSeekHTTPTestCase(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        local_dir = Path(__file__).resolve().parents[1] / ".autovisor"
+        local_dir.mkdir(mode=0o700, exist_ok=True)
+        runtime_dir = TemporaryDirectory(dir=local_dir)
+        self.addCleanup(runtime_dir.cleanup)
+        runtime_patch = patch.object(Logger(), "runtime_root", runtime_dir.name)
+        runtime_patch.start()
+        self.addCleanup(runtime_patch.stop)
+        self.history_path = Path(runtime_dir.name) / ".autovisor" / "deepseek-answers.md"
 
         self.server = ThreadingHTTPServer(("127.0.0.1", 0), _DeepSeekHandler)
         self.server.status = 200
@@ -67,6 +71,48 @@ class BrowserAnswerTests(unittest.IsolatedAsyncioTestCase):
         self.server.reply = {"choices": [{"finish_reason": "stop", "message": {
             "content": json.dumps({"answers": answers}),
         }}]}
+
+
+class DeepSeekHistoryTests(_DeepSeekHTTPTestCase):
+    async def test_valid_answers_append_to_markdown(self):
+        self.set_answers([2])
+        self.assertEqual(await ask_deepseek("单选题：一加一等于多少？", ["一", "二"], "key-for-test"), [1])
+        first_record = self.history_path.read_text(encoding="utf-8")
+        self.assertIn("单选题：一加一等于多少？", first_record)
+        self.assertIn("选项\n    1. 一\n    2. 二", first_record)
+        self.assertIn("答案\n    2. 二", first_record)
+
+        self.set_answers([1, 3])
+        self.assertEqual(await ask_deepseek("多选题：选择质数。", ["二", "四", "五"], "key-for-test"), [0, 2])
+        records = self.history_path.read_text(encoding="utf-8")
+        self.assertTrue(records.startswith(first_record))
+        self.assertEqual(records.count("\n    答案\n"), 2)
+        self.assertIn("多选题：选择质数。", records)
+        self.assertIn("答案\n    1. 二\n    3. 五", records)
+        self.assertNotIn("key-for-test", records)
+
+        self.set_answers([])
+        with self.assertRaises(AnswerError):
+            await ask_deepseek("无有效答案的题目", ["二", "四"], "key-for-test")
+        self.assertEqual(self.history_path.read_text(encoding="utf-8"), records)
+
+    async def test_write_failure_warns_and_returns_valid_answer(self):
+        self.history_path.mkdir(parents=True)
+        self.set_answers([1])
+        output = io.StringIO()
+        with contextlib.redirect_stderr(output):
+            self.assertEqual(await ask_deepseek("单选题", ["二", "四"], "key-for-test"), [0])
+        self.assertIn("无法保存 DeepSeek 答案", output.getvalue())
+
+
+@unittest.skipUnless(os.environ.get("AUTOVISOR_TEST_BROWSER") == "1", "需要显式启用真实浏览器测试")
+class BrowserAnswerTests(_DeepSeekHTTPTestCase):
+    async def asyncSetUp(self):
+        self.playwright = await async_playwright().start()
+        self.addAsyncCleanup(self.playwright.stop)
+        self.browser = await self.playwright.chromium.launch(channel="chrome", headless=True)
+        self.addAsyncCleanup(self.browser.close)
+        self.page = await self.browser.new_page()
 
     async def _check_fusion_manual_answer(self, api_key):
         await self.page.set_content('''

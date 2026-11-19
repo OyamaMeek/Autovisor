@@ -113,6 +113,8 @@ api_key =
 
 填写后启动 Autovisor。程序会把题干和可见选项发送给 DeepSeek 的 `deepseek-flash`，校验返回的选项编号后作答。融合练习完成后会提交并恢复播放。支持文本单选、多选和判断题，每题请求上限为 120 秒，费用从用户的 DeepSeek 账户扣除。 [DeepSeek 模型与价格](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/)
 
+每次收到通过校验的答案后，程序会把时间、题目、选项和答案追加到项目目录（打包版为可执行文件所在目录）的 `.autovisor/deepseek-answers.md`。首次保存时自动创建文件。写入失败时会显示警告，已校验的答案仍可用于作答。
+
 Key 留空、API 请求失败或答案无效时，程序会保留题目并等待手动作答。`studywisdomh5` 新版弹题、`hike` 课程和图片题仍需手动处理。
 
 ##### 作业考试答题模式

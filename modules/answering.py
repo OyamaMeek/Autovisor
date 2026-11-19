@@ -1,5 +1,9 @@
 import asyncio
 import json
+import sys
+from datetime import datetime
+from pathlib import Path
+from textwrap import indent
 
 import httpx
 from playwright.async_api import Locator
@@ -87,7 +91,21 @@ async def ask_deepseek(question: str, options: list[str], api_key: str) -> list[
         raise AnswerError("DeepSeek 未返回答案")
     if len(content) > MAX_ANSWER_CHARS:
         raise AnswerError("DeepSeek 答案超过长度上限")
-    return parse_answer(content, len(options))
+    answers = parse_answer(content, len(options))
+    history_path = Path(logger.runtime_root) / ".autovisor" / "deepseek-answers.md"
+    numbered_options = [f"{index}. {option}" for index, option in enumerate(options, start=1)]
+    details = "\n".join([
+        "题目", question, "", "选项", *numbered_options, "", "答案",
+        *(numbered_options[index] for index in answers),
+    ])
+    timestamp = datetime.now().astimezone().isoformat(sep=" ", timespec="seconds")
+    try:
+        history_path.parent.mkdir(mode=0o700, exist_ok=True)
+        with history_path.open("a", encoding="utf-8", newline="\n") as history:
+            history.write(f"## {timestamp}\n\n{indent(details, '    ')}\n\n")
+    except OSError as exc:
+        print(f"[WARN] 无法保存 DeepSeek 答案至 {history_path}（{exc.strerror}）", file=sys.stderr)
+    return answers
 
 
 async def answer_question(dialog: Locator, option_selector: str, api_key: str) -> None:

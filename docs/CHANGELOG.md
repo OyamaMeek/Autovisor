@@ -140,3 +140,19 @@
 - **Git 提交** `d38bfcf15451f05463e4a220358644bea35e8a5b feat(exam): open unsubmitted homework in order`，已推送 `origin/main`。
 
 ---
+
+## [2026-11-19 14:33] 保存 DeepSeek 答案到本地 Markdown
+
+- **需求/问题描述**
+  > 把每次调用 DeepSeek 的答案保存到本地 Markdown。
+
+- **实际实现的功能与改动**
+  - 课中题、融合练习和作业考试共用的 DeepSeek 入口将每次通过校验的答案追加到 `.autovisor/deepseek-answers.md`，每条包含时间、题目、选项和答案。写入失败时提示，已校验的答案仍可用于作答。
+  - 本地 HTTP 和真实文件验证连续追加、中文及多选答案、无效答案处理和写入失败。启用 Chrome 的全量测试共 130 项，127 项通过、3 项跳过。最终版本的 5 项专项回归、Python 编译、CLI 帮助和差异检查通过。线上 DeepSeek 请求未执行。
+
+- **涉及文件**
+  - `modules/answering.py`、`tests/test_answering_integration.py`、`README.md`、`memory/`、`docs/CHANGELOG.md`
+
+- **Git 提交** 待提交。
+
+---

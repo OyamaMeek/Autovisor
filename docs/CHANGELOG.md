@@ -189,6 +189,6 @@
   - `tests/fixtures/exam_paper.html`、`tests/test_answering_integration.py`
   - `memory/`、`docs/CHANGELOG.md`
 
-- **Git 提交** 待提交。
+- **Git 提交** `103f560b1964006011b160907956b5df5f057be0 fix(exam): wait for each homework window to close`，已推送 `origin/main`。
 
 ---

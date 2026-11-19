@@ -35,6 +35,7 @@
 - **自动播放和切换下一集**
 - **自动跳过弹窗和弹题**
 - **通过 DeepSeek API 作答普通课中题目与融合课随堂练习**
+- **通过独立模式填写作业、见面课测验与考试中的文本客观题**
 - **自动静音、设置指定倍速**
 - **自动检测暂停并自动续播**
 - **支持智慧共享课、翻转课、融合共享课**
@@ -107,6 +108,16 @@ api_key =
 填写后启动 Autovisor。程序会把题干和可见选项发送给 DeepSeek 的 `deepseek-flash`，校验返回的选项编号后作答。融合练习完成后会提交并恢复播放。支持文本单选、多选和判断题，每题请求上限为 120 秒，费用从用户的 DeepSeek 账户扣除。 [DeepSeek 模型与价格](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/)
 
 Key 留空、API 请求失败或答案无效时，程序会保留题目并等待手动作答。`studywisdomh5` 新版弹题、`hike` 课程和图片题仍需手动处理。
+
+##### 作业考试答题模式
+
+填写自己的 DeepSeek API Key 后，根据运行方式启动。
+
+- macOS 源码运行 `./run_macos.sh --answer-exam`
+- Windows 发行版在 PowerShell 中运行 `./Autovisor.exe --answer-exam`
+- 其他源码运行方式使用 `uv run python Autovisor.py --answer-exam`
+
+在程序打开的在线学堂中选择课程，进入 **作业考试**，自行选择试卷并点击 **开始答题**。程序从当前题开始填写没有选择的文本单选、多选和判断题，通过页面原有的 **下一题** 与 **保存** 逐题保存。遇到主观题或无法读取的内容时保留原有内容，供你手动检查。识别到平台验证或作答出错时，请在浏览器继续处理。完成后核对答案并自行交卷。
 
 测试命令为 `uv run python -m unittest discover -s tests -v`。设置 `AUTOVISOR_TEST_BROWSER=1` 可运行真实 Chrome 和本地 HTTP 服务的答题测试。设置 `AUTOVISOR_TEST_DEEPSEEK=1` 和 `DEEPSEEK_API_KEY` 可另外测试一次真实 DeepSeek 请求，测试题为 `1 + 1`。
 

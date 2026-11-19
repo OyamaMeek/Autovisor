@@ -12,6 +12,7 @@ from playwright._impl._errors import TargetClosedError
 
 from modules import installer, updater
 from modules.banner import print_banner
+from modules.browser import create_browser_session
 from modules.configs import Config, ConfigError
 from modules.course_runner import (
     CourseOutcome,
@@ -19,6 +20,7 @@ from modules.course_runner import (
     run_course,
 )
 from modules.diagnostics import check_browser, check_course
+from modules.exam_answering import watch_exam_pages
 from modules.login import (
     LOGIN_PASSWORD_SELECTOR,
     LOGIN_SUBMIT_SELECTOR,
@@ -232,6 +234,23 @@ async def ensure_login(
     return False
 
 
+async def run_exam_mode(config) -> None:
+    cookies = None if config.attach_existing_chrome else load_cookies(COOKIE_PATH)
+    remember_login_cookies(cookies)
+    async with async_playwright() as playwright:
+        session = await create_browser_session(playwright, config, cookies, logger)
+        try:
+            if not session.attached:
+                await ensure_login(session.context, session.page, cookies, config)
+            await session.page.goto(
+                "https://onlineweb.zhihuishu.com/onlinestuh5", wait_until="domcontentloaded", timeout=30000
+            )
+            logger.info("请在在线学堂进入作业考试并手动打开试卷。答题后请核对并自行交卷。", shift=True)
+            await watch_exam_pages(session.page, config.deepseek_api_key)
+        finally:
+            await session.close()
+
+
 async def main(config) -> bool:
     modules, tasks = [], []
     playback_enabled = asyncio.Event()
@@ -372,6 +391,7 @@ def parse_args():
         metavar="URL",
         help="阻止进度上报和自动播放,只检查课程目录选择器",
     )
+    parser.add_argument("--answer-exam", action="store_true", help="开启智慧树作业考试答题模式")
     parser.add_argument(
         "--import-cookies",
         metavar="PATH",
@@ -437,6 +457,12 @@ def cli() -> int:
             return asyncio.run(
                 check_course(args.check_course, config, logger, COOKIE_PATH)
             )
+        if args.answer_exam:
+            if not config.deepseek_api_key:
+                logger.error("请在配置文件的 [deepseek] 中填写 api_key 后再启动作业考试模式。", shift=True)
+                return 2
+            asyncio.run(run_exam_mode(config))
+            return 0
         if not config.course_urls:
             logger.error("未检测到有效网址或不支持此类网页,请检查配置文件!")
             return 2

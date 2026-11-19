@@ -40,3 +40,22 @@
 - **Git 提交** `adf454372d27cbb8b7d691ee0d33b0e9746ed6e8 feat(answering): use DeepSeek API with a user-provided key`，已推送 `origin/main`。
 
 ---
+
+## [2026-11-19 11:42] 支持智慧树作业考试答题
+
+- **需求/问题描述**
+  > 将现有 DeepSeek 答题兼容智慧树新版作业与考试页面。
+
+- **实际实现的功能与改动**
+  - 增加 `--answer-exam`，用户从在线学堂打开试卷，支持作业的新标签页及考试的同页跳转。复用用户提供的 DeepSeek Key，填写未作答的文本单选、多选和判断题，检查原题和勾选状态后逐题保存，交卷由用户确认。
+  - 使用浏览器无障碍树读取当前题干的可访问文本，保留已有选择及需人工处理的题目。
+  - 全量测试 119 项，116 项通过、3 项跳过。真实 Chrome 与本地 HTTP 服务验证答题和保存，空白 Key 时 CLI 返回退出码 2。Python 编译、Bash 语法、锁文件和差异检查通过。正式线上试卷和线上模型调用未验证。
+
+- **涉及文件**
+  - `Autovisor.py`、`modules/exam_answering.py`、`README.md`
+  - `tests/test_answering.py`、`tests/test_answering_integration.py`、`tests/fixtures/exam_paper.html`
+  - `memory/`、`docs/CHANGELOG.md`
+
+- **Git 提交** 待提交
+
+---

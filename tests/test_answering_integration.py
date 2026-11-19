@@ -5,11 +5,13 @@ import os
 import threading
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from unittest.mock import patch
 
 from playwright.async_api import async_playwright
 
 from modules.answering import AnswerError, answer_question
+from modules.exam_answering import fill_exam, watch_exam_pages
 from modules.fusion_adapter import FusionAdapter
 from modules.tasks import skip_questions
 
@@ -20,7 +22,8 @@ class _DeepSeekHandler(BaseHTTPRequestHandler):
         self.server.request = (self.path, self.headers["Authorization"], request)
         self.server.request_received.set()
         self.server.reply_ready.wait(timeout=10)
-        body = json.dumps(self.server.reply).encode("utf-8")
+        reply = self.server.reply(request) if callable(self.server.reply) else self.server.reply
+        body = json.dumps(reply).encode("utf-8")
         self.send_response(self.server.status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
@@ -183,6 +186,90 @@ class BrowserAnswerTests(unittest.IsolatedAsyncioTestCase):
             with self.assertRaisesRegex(AnswerError, "题目已变化"):
                 await asyncio.wait_for(task, timeout=5)
             self.assertEqual(await self.page.locator("[data-clicked]").count(), 0)
+        finally:
+            if not task.done():
+                task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await task
+
+    async def _serve_exam(self, route="dohomework", query=""):
+        base_url = "https://onlineexamh5new.zhihuishu.com/stuExamWeb.html"
+        exam = Path(__file__).with_name("fixtures") / "exam_paper.html"
+        await self.page.context.route(base_url + "*", lambda request_route: request_route.fulfill(path=exam))
+        params = "recruit/work/exam/course/school" + ("/0" if route == "dohomework" else "")
+        return f"{base_url}{query}#/webExamList/{route}/{params}"
+
+    async def test_exam_waits_for_manually_opened_paper_and_saves_without_submitting(self):
+        url = await self._serve_exam()
+        statements = []
+
+        def reply(request):
+            data = json.loads(request["messages"][1]["content"])
+            statements.append(data["question"])
+            answers = [1, 3] if "质数" in data["question"] and "多选题" in data["question"] else [2]
+            return {"choices": [{"finish_reason": "stop", "message": {"content": json.dumps({"answers": answers})}}]}
+
+        self.server.reply = reply
+        await self.page.set_content(f'<button onclick="window.open(\'{url}\')">开始答题</button>')
+        task = asyncio.create_task(watch_exam_pages(self.page, "key-for-test"))
+        try:
+            await asyncio.sleep(0.2)
+            self.assertFalse(self.server.request_received.is_set())
+            async with self.page.expect_popup(timeout=5000) as popup:
+                await self.page.get_by_role("button", name="开始答题").click()
+            paper = await popup.value
+            await paper.get_by_text("保存成功！", exact=True).wait_for(timeout=12000)
+            body = paper.locator("body")
+            self.assertEqual(await body.get_attribute("data-saved0"), "1")
+            self.assertEqual(await body.get_attribute("data-saved1"), "1,3")
+            self.assertEqual(await body.get_attribute("data-saved2"), "")
+            self.assertEqual(await body.get_attribute("data-saved3"), "2")
+            self.assertIsNone(await body.get_attribute("data-submitted"))
+            self.assertEqual(len(statements), 2)
+            self.assertIn("选择所有质数", statements[0])
+            self.assertIn("九是质数", statements[1])
+        finally:
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
+
+    async def test_exam_mode_tracks_exam_opened_in_same_tab(self):
+        self.set_answers([2])
+        url = await self._serve_exam("doexamination", "?kind=single")
+        task = asyncio.create_task(watch_exam_pages(self.page, "key-for-test"))
+        try:
+            await self.page.goto(url)
+            await self.page.get_by_text("保存成功！", exact=True).wait_for(timeout=10000)
+            self.assertEqual(await self.page.locator("body").get_attribute("data-saved0"), "2")
+            self.assertIsNone(await self.page.locator("body").get_attribute("data-submitted"))
+        finally:
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
+
+    async def test_exam_rejects_multiple_answers_on_single_choice(self):
+        self.set_answers([1, 2])
+        url = await self._serve_exam("doexamination", "?kind=single")
+        await self.page.goto(url)
+        with self.assertRaisesRegex(AnswerError, "单选"):
+            await fill_exam(self.page, "key-for-test")
+        self.assertEqual(await self.page.locator("input:checked").count(), 0)
+        self.assertIsNone(await self.page.locator("body").get_attribute("data-saved0"))
+
+    async def test_exam_keeps_selection_made_by_user_during_request(self):
+        self.set_answers([2])
+        self.server.reply_ready.clear()
+        url = await self._serve_exam("doexamination", "?kind=single")
+        await self.page.goto(url)
+        task = asyncio.create_task(fill_exam(self.page, "key-for-test"))
+        try:
+            self.assertTrue(await asyncio.to_thread(self.server.request_received.wait, 5))
+            await self.page.locator(".nodeLab").first.click()
+            self.server.reply_ready.set()
+            with self.assertRaisesRegex(AnswerError, "已变化"):
+                await asyncio.wait_for(task, timeout=5)
+            self.assertEqual(await self.page.locator("input:checked").input_value(), "1")
+            self.assertIsNone(await self.page.locator("body").get_attribute("data-saved0"))
         finally:
             if not task.done():
                 task.cancel()

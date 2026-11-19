@@ -2,6 +2,7 @@ import os
 import unittest
 
 from modules.answering import AnswerError, ask_deepseek, parse_answer
+from modules.exam_answering import is_exam_paper_url
 
 
 class AnswerValidationTests(unittest.TestCase):
@@ -37,3 +38,18 @@ class AnswerClientTests(unittest.IsolatedAsyncioTestCase):
         api_key = os.environ.get("DEEPSEEK_API_KEY", "").strip()
         self.assertTrue(api_key, "请先设置 DEEPSEEK_API_KEY")
         self.assertEqual(await ask_deepseek("单选题：1 + 1 等于多少？", ["3", "2", "5"], api_key), [1])
+
+
+class ExamUrlTests(unittest.TestCase):
+    def test_only_matches_active_papers_on_the_supported_site(self):
+        base_url = "https://onlineexamh5new.zhihuishu.com/stuExamWeb.html#/webExamList"
+        for route in ("dohomework", "doexamination"):
+            with self.subTest(route=route):
+                params = "recruit/work/exam/course/school" + ("/0" if route == "dohomework" else "")
+                self.assertTrue(is_exam_paper_url(f"{base_url}/{route}/{params}"))
+        for url in (base_url, f"{base_url}/checkHomework/course/work/exam",
+                    f"{base_url}/computerExamination/course/work/exam",
+                    f"{base_url}/dohomework/",
+                    f"{base_url.replace('.com/', '.com.example.org/')}/dohomework/recruit/work/exam/course/school/0"):
+            with self.subTest(url=url):
+                self.assertFalse(is_exam_paper_url(url))

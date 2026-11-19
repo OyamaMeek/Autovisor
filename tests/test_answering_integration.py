@@ -265,6 +265,47 @@ class BrowserAnswerTests(unittest.IsolatedAsyncioTestCase):
             with contextlib.suppress(asyncio.CancelledError):
                 await task
 
+    async def test_completed_homework_confirms_stash_after_saving_last_answer(self):
+        self.set_answers([2])
+        url = await self._serve_exam(query="?kind=single")
+        await self.page.goto(url)
+
+        self.assertEqual(await fill_exam(self.page, "key-for-test"), (1, 0))
+
+        body = self.page.locator("body")
+        self.assertEqual(await body.get_attribute("data-saved0"), "2")
+        self.assertEqual(await body.get_attribute("data-stashed"), "2")
+        self.assertIsNone(await body.get_attribute("data-submitted"))
+
+    async def test_homework_saves_existing_selection_on_last_question_before_stashing(self):
+        await self.page.goto(await self._serve_exam(query="?kind=single"))
+        await self.page.get_by_text("3", exact=True).click()
+
+        self.assertEqual(await fill_exam(self.page, "key-for-test"), (0, 0))
+
+        self.assertEqual(await self.page.locator("body").get_attribute("data-stashed"), "1")
+        self.assertFalse(self.server.request_received.is_set())
+
+    async def test_incomplete_homework_remains_open_for_manual_review(self):
+        self.set_answers([2])
+        await self.page.goto(await self._serve_exam())
+
+        self.assertEqual(await fill_exam(self.page, "key-for-test"), (2, 1))
+
+        self.assertIsNone(await self.page.locator("body").get_attribute("data-stashed"))
+        self.assertFalse(await self.page.get_by_role("dialog").is_visible())
+
+    async def test_homework_tab_can_close_after_stash_confirmation(self):
+        self.set_answers([2])
+        url = await self._serve_exam(query="?kind=single")
+        async with self.page.expect_popup() as popup:
+            await self.page.evaluate("url => { window.open(url); }", url)
+        paper = await popup.value
+        await paper.wait_for_url(url)
+
+        async with paper.expect_event("close", timeout=5000):
+            self.assertEqual(await fill_exam(paper, "key-for-test"), (1, 0))
+
     async def test_exam_mode_tracks_paper_in_same_tab_after_campus_timeout(self):
         self.set_answers([2])
         url = await self._serve_exam("doexamination", "?kind=single")

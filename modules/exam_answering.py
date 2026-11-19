@@ -103,6 +103,7 @@ async def fill_exam(page: Page, api_key: str) -> tuple[int, int]:
     controls = page.locator(".examPaper_box .switch-btn-box:visible")
     next_button = controls.get_by_role("button", name="下一题", exact=True)
     save_button = controls.get_by_role("button", name="保存", exact=True)
+    stash_button = page.get_by_role("button", name="暂存作业", exact=True)
     filled = skipped = 0
     cdp = await page.context.new_cdp_session(page)
     try:
@@ -119,9 +120,20 @@ async def fill_exam(page: Page, api_key: str) -> tuple[int, int]:
             if await has_visible_verification(page):
                 raise AnswerError("检测到平台验证，请在浏览器手动处理")
             if not await next_button.is_visible():
-                if result:
+                can_stash = await stash_button.is_visible()
+                if result or (can_stash and not needs_manual):
                     await save_button.click(timeout=2500)
                     await page.get_by_text("保存成功！", exact=True).wait_for(timeout=10000)
+                completion = page.locator(".percentage_tit:visible").get_by_text("100%", exact=True)
+                if can_stash and await completion.is_visible():
+                    await stash_button.click(timeout=2500)
+                    dialog = page.locator(".el-message-box:visible").filter(
+                        has=page.get_by_text("你确定要暂存作业吗", exact=True)
+                    )
+                    await dialog.wait_for(timeout=10000)
+                    if page.url != url or await has_visible_verification(page):
+                        raise AnswerError("检测到页面变化或平台验证，已暂停暂存")
+                    await dialog.get_by_role("button", name="确定", exact=True).click(timeout=2500)
                 return filled, skipped
             await next_button.click(timeout=2500)
             await page.locator(f"{selector}:visible").wait_for(state="hidden", timeout=10000)

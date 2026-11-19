@@ -6,7 +6,14 @@
         <button id="next" onclick="saveAndAdvance()">下一题</button>
         <button id="save" onclick="saveFinal()" hidden>保存</button>
     </div>
-    <button onclick="document.body.dataset.submitted = 'yes'">提交</button>
+    <button id="stash" onclick="document.getElementById('stash-dialog').showModal()" hidden>暂存作业</button>
+    <button onclick="document.body.dataset.submitted = 'yes'">提交作业</button>
+    <h3 class="percentage_tit"><span>完成率</span> <em><i id="completion">0</i>%</em></h3>
+    <dialog id="stash-dialog" class="el-message-box">
+        <p>你确定要暂存作业吗</p>
+        <button onclick="this.closest('dialog').close()">取消</button>
+        <button onclick="confirmStash()">确定</button>
+    </dialog>
     <span id="notice" hidden>保存成功！</span>
 </div>
 <script>
@@ -49,11 +56,14 @@
     const pages = document.getElementById('questions').children;
     const next = document.getElementById('next');
     const save = document.getElementById('save');
+    document.getElementById('stash').hidden = !location.hash.includes('/dohomework/');
     next.hidden = pages.length === 1;
     save.hidden = !next.hidden;
     function recordAnswer() {
         const selected = [...pages[current].querySelectorAll('input:checked')].map(input => input.value);
         document.body.dataset[`saved${current}`] = selected.join(',');
+        const answered = [...pages].filter((_, index) => document.body.dataset[`saved${index}`]).length;
+        document.getElementById('completion').textContent = Math.floor(100 * answered / pages.length);
     }
     function saveAndAdvance() {
         recordAnswer();
@@ -65,5 +75,10 @@
     function saveFinal() {
         recordAnswer();
         document.getElementById('notice').hidden = false;
+    }
+    function confirmStash() {
+        document.getElementById('stash-dialog').close();
+        document.body.dataset.stashed = document.body.dataset[`saved${current}`];
+        if (window.opener) window.close();
     }
 </script>

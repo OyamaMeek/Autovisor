@@ -108,3 +108,19 @@
 - **Git 提交** `77a3d27aaf776cde8ab82cbbd71a160e870ef278 fix(exam): keep browser open after campus navigation timeout`，已推送 `origin/main`。
 
 ---
+
+## [2026-11-19 14:08] 作业答完后自动暂存
+
+- **需求/问题描述**
+  > 答完作业后点击「暂存作业」并确认。
+
+- **实际实现的功能与改动**
+  - 保存末题后，作业页面完成率达到 100% 时点击「暂存作业」，并在暂存确认框中点击「确定」。未完成的作业留在答题页，交卷由用户操作。
+  - Chrome 回归测试覆盖末题保存、已有选项、未完成作业和确认后关闭标签页。全量测试 127 项，124 项通过、3 项跳过。Python 编译、CLI 帮助和差异检查通过。暂存行为使用本地作业页面验证。
+
+- **涉及文件**
+  - `modules/exam_answering.py`、`Autovisor.py`、`README.md`、`tests/test_answering_integration.py`、`tests/fixtures/exam_paper.html`、`memory/`、`docs/CHANGELOG.md`
+
+- **Git 提交** 待提交。
+
+---

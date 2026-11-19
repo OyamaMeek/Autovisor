@@ -73,6 +73,6 @@
   - `Autovisor.py`、`modules/configs.py`、`modules/login.py`、`GUI.py`
   - `config.ini.example`、`config.macos.ini.example`、`README.md`、`tests/test_login.py`、`memory/`、`docs/CHANGELOG.md`
 
-- **Git 提交** 待提交。
+- **Git 提交** `75e798fefb636b2d6e13a8110524da4c2f1669fd feat(login): support Zhihuishu student ID sign-in`，已推送 `origin/main`。
 
 ---

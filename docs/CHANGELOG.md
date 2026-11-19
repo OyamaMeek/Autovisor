@@ -156,3 +156,20 @@
 - **Git 提交** `4e0c6844cdfe0be1e53cbc8f389cf0553b101c03 feat(answering): save DeepSeek answers to Markdown`，已推送 `origin/main`。
 
 ---
+
+## [2026-11-19 14:55] 首题加载超时后刷新试卷
+
+- **需求/问题描述**
+  > 作业或试卷的题目加载不出来时需要重新加载，并核对日志里的保存失败提示。
+
+- **实际实现的功能与改动**
+  - 等待首题 15 秒超时后刷新当前试卷一次。平台验证和作答阶段的异常保留当前页面。自动刷新后仍未加载时，手动刷新让题目显示后可恢复。
+  - 本地日志中的作答异常对应点击后未检测到勾选状态，发生在保存步骤之前。未验证线上页面未显示勾选的原因。
+  - 启用 Chrome 的全量测试共 133 项，130 项通过、3 项跳过。Python 编译、CLI 帮助和差异检查通过。
+
+- **涉及文件**
+  - `modules/exam_answering.py`、`tests/test_answering_integration.py`、`README.md`、`memory/`、`docs/CHANGELOG.md`
+
+- **Git 提交** 待提交。
+
+---

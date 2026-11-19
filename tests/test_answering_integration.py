@@ -263,8 +263,18 @@ class BrowserAnswerTests(_DeepSeekHTTPTestCase):
 
     async def test_unsubmitted_homework_opens_once_in_order_after_list_refresh(self):
         self.set_answers([2])
-        first = await self._serve_exam(query="?kind=single")
-        second = first.replace("/work/", "/work-two/")
+        first = await self._serve_exam(query="?kind=single&reload=1")
+        second = first.replace("/work/", "/work-two/").replace("&reload=1", "")
+        first_loads = []
+
+        async def serve_first_homework(route):
+            first_loads.append(route.request.url)
+            if len(first_loads) == 1:
+                await route.fulfill(content_type="text/html", body="<main>Loading</main>")
+            else:
+                await route.fallback()
+
+        await self.page.context.route(first.split("#", 1)[0], serve_first_homework)
         list_url = "https://onlineexamh5new.zhihuishu.com/stuExamWeb.html#/webExamList?recruitId=recruit"
         await self.page.route("**/stuExamWeb.html", lambda route: route.fulfill(
             content_type="text/html; charset=utf-8",
@@ -307,6 +317,9 @@ class BrowserAnswerTests(_DeepSeekHTTPTestCase):
             ''',
         ))
         await self.page.goto(list_url)
+        load_timeout = patch("modules.exam_answering.PAPER_LOAD_TIMEOUT_MS", 1000)
+        load_timeout.start()
+        self.addCleanup(load_timeout.stop)
         task = asyncio.create_task(watch_exam_pages(self.page, "key-for-test"))
         try:
             await asyncio.sleep(0.6)
@@ -323,6 +336,75 @@ class BrowserAnswerTests(_DeepSeekHTTPTestCase):
             ])
             await asyncio.sleep(0.6)
             self.assertEqual(await self.page.evaluate("opened"), [[1, 0], [2, 1]])
+            self.assertEqual(len(first_loads), 2)
+        finally:
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
+
+    async def test_exam_refreshes_only_once_when_questions_stay_blank(self):
+        self.set_answers([2])
+        url = await self._serve_exam("doexamination", "?kind=single")
+        loads = []
+
+        async def serve_blank_exam(route):
+            loads.append(route.request.url)
+            if len(loads) <= 2:
+                await route.fulfill(content_type="text/html", body="<main>Loading</main>")
+            else:
+                await route.fallback()
+
+        await self.page.route(url.split("#", 1)[0], serve_blank_exam)
+        await self.page.goto(url)
+        with patch("modules.exam_answering.PAPER_LOAD_TIMEOUT_MS", 500):
+            task = asyncio.create_task(watch_exam_pages(self.page, "key-for-test"))
+            try:
+                async with self.page.expect_event("domcontentloaded", timeout=2000):
+                    pass
+                await asyncio.sleep(1.6)
+                self.assertEqual(len(loads), 2)
+                self.assertEqual(self.page.url, url)
+                self.assertFalse(self.server.request_received.is_set())
+                await self.page.reload()
+                await self.page.get_by_text("保存成功！", exact=True).wait_for(timeout=5000)
+                self.assertEqual(await self.page.locator("body").get_attribute("data-saved0"), "2")
+                self.assertEqual(len(loads), 3)
+            finally:
+                task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await task
+
+    async def test_exam_keeps_platform_verification_open_while_waiting_for_questions(self):
+        url = await self._serve_exam("doexamination")
+        await self.page.goto(url)
+        await self.page.set_content('<main>Loading</main>')
+        with patch("modules.exam_answering.PAPER_LOAD_TIMEOUT_MS", 500):
+            task = asyncio.create_task(watch_exam_pages(self.page, "key-for-test"))
+            try:
+                await asyncio.sleep(0.2)
+                await self.page.locator("main").evaluate(
+                    "el => { el.className = 'yidun_modal__title'; el.textContent = '请完成验证'; }"
+                )
+                await asyncio.sleep(1)
+                self.assertTrue(await self.page.get_by_text("请完成验证").is_visible())
+                self.assertFalse(self.server.request_received.is_set())
+            finally:
+                task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await task
+
+    async def test_exam_keeps_checked_answer_when_save_fails(self):
+        self.set_answers([2])
+        url = await self._serve_exam("doexamination", "?kind=single")
+        await self.page.goto(url)
+        await self.page.get_by_role("button", name="保存").evaluate("button => button.remove()")
+        task = asyncio.create_task(watch_exam_pages(self.page, "key-for-test"))
+        try:
+            await self.page.locator("input:checked").wait_for(state="attached", timeout=5000)
+            await asyncio.sleep(3.1)
+            self.assertEqual(await self.page.locator("input:checked").input_value(), "2")
+            self.assertEqual(await self.page.get_by_role("button", name="保存").count(), 0)
+            self.assertIsNone(await self.page.locator("body").get_attribute("data-saved0"))
         finally:
             task.cancel()
             with contextlib.suppress(asyncio.CancelledError):

@@ -5,12 +5,14 @@ from unicodedata import category
 from urllib.parse import urlsplit
 
 from playwright.async_api import CDPSession, Error as PlaywrightError, Page
+from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
 from modules.answering import AnswerError, ask_deepseek
 from modules.logger import Logger
 from modules.tasks import has_visible_verification
 
 logger = Logger()
+PAPER_LOAD_TIMEOUT_MS = 15000
 QUESTION = ".examPaper_box .examPaper_subject"
 ANCHOR = "> .subject_stem .subject_num [id^='anchor_']"
 STEM = "> .subject_stem .subject_describe"
@@ -180,8 +182,6 @@ async def _open_next_homework(page: Page, attempted: set[tuple[str, tuple[str, .
                 await button.click(timeout=2500)
             paper = await result.value
             await paper.wait_for_url(lambda value: value not in {"", "about:blank"}, wait_until="commit", timeout=15000)
-            if is_exam_paper_url(paper.url):
-                await paper.locator(f"{QUESTION}:visible").first.wait_for(timeout=15000)
         except PlaywrightError as exc:
             logger.warn(f"作业「{identity[0]}」打开或加载失败，请在浏览器检查。", shift=True)
             logger.debug(logger.summarize_exception(exc))
@@ -192,6 +192,7 @@ async def _open_next_homework(page: Page, attempted: set[tuple[str, tuple[str, .
 async def watch_exam_pages(entry_page: Page, api_key: str) -> None:
     pages = set()
     handled = {}
+    reloaded = {}
     attempted = set()
 
     def track(page: Page) -> None:
@@ -204,15 +205,36 @@ async def watch_exam_pages(entry_page: Page, api_key: str) -> None:
             if page.is_closed():
                 pages.discard(page)
                 handled.pop(page, None)
+                reloaded.pop(page, None)
                 continue
             url = page.url
             if not is_exam_paper_url(url):
                 handled.pop(page, None)
+                reloaded.pop(page, None)
                 continue
             if handled.get(page) == url:
                 continue
             try:
-                if not await page.locator(f"{QUESTION}:visible").count() or await has_visible_verification(page):
+                if await has_visible_verification(page):
+                    continue
+                question = page.locator(f"{QUESTION}:visible").first
+                if reloaded.get(page) == url:
+                    if not await question.is_visible():
+                        continue
+                else:
+                    try:
+                        await question.wait_for(timeout=PAPER_LOAD_TIMEOUT_MS)
+                    except PlaywrightTimeoutError:
+                        if await has_visible_verification(page) or page.url != url:
+                            continue
+                        if not await question.is_visible():
+                            reloaded[page] = url
+                            logger.info("等待首题加载超时，正在刷新当前试卷。", shift=True)
+                            await page.reload(wait_until="commit", timeout=PAPER_LOAD_TIMEOUT_MS)
+                            if page.url != url:
+                                continue
+                            await question.wait_for(timeout=PAPER_LOAD_TIMEOUT_MS)
+                if await has_visible_verification(page) or page.url != url:
                     continue
                 handled[page] = url
                 filled, skipped = await fill_exam(page, api_key)

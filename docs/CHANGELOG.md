@@ -56,6 +56,6 @@
   - `tests/test_answering.py`、`tests/test_answering_integration.py`、`tests/fixtures/exam_paper.html`
   - `memory/`、`docs/CHANGELOG.md`
 
-- **Git 提交** 待提交
+- **Git 提交** `ecaac6c52bb860cc8bcaf595eaf30f3051cfbc4e feat(answering): support Zhihuishu assignments and exams`，已推送 `origin/main`。
 
 ---

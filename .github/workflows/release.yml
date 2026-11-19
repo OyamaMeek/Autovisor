@@ -1,0 +1,70 @@
+name: Windows Release
+
+on:
+  push:
+    tags: ['[0-9]+.[0-9]+.[0-9]+']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+
+jobs:
+  release:
+    runs-on: windows-2025
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: bash
+    env:
+      PYTHONUTF8: "1"
+
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.1.0
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Check version and test
+        env:
+          AUTOVISOR_TEST_BROWSER: "1"
+        run: |
+          version=$(uv run --locked python -c 'from modules.version import __version__; print(__version__)')
+          if [[ "$GITHUB_REF_NAME" != "$version" ]]; then
+            echo "Tag $GITHUB_REF_NAME does not match application version $version" >&2
+            exit 1
+          fi
+          uv run --locked python -m unittest discover -s tests -v
+
+      - name: Build and verify ZIP
+        run: |
+          uv run --locked --with pyinstaller==6.22.3 python build.py
+          archive="dist/Autovisor-${GITHUB_REF_NAME}-windows-amd64.zip"
+          uv run --locked python -m zipfile -c "$archive" dist/Autovisor
+          uv run --locked python -m zipfile -e "$archive" dist/smoke
+          package=dist/smoke/Autovisor
+          cmp config.ini.example "$package/config.ini"
+          cmp LICENSE "$package/LICENSE"
+          test -s "$package/data/mirrors.json"
+          test -s "$package/resources/QRcode.jpg"
+          test -s "$package/resources/stealth.min.js"
+          test -s "$package/internal/python3.dll"
+          test -s "$package/internal/playwright/driver/node.exe"
+          output=$("$package/Autovisor.exe" --help)
+          printf '%s\n' "$output"
+          grep -Fq -- '--answer-exam' <<< "$output"
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            "dist/Autovisor-${GITHUB_REF_NAME}-windows-amd64.zip" \
+            --verify-tag --title "Autovisor-${GITHUB_REF_NAME}" --notes-from-tag

@@ -135,10 +135,9 @@ Key 留空、API 请求失败或答案无效时，程序会保留题目并等待
 
 #### 四、发行版下载
 
-- Github: [Releases · CXRunfree/Autovisor](https://github.com/CXRunfree/Autovisor/releases)
-- 网盘备用: [蓝奏云 · Autovisor-for-windows](https://wwk.lanzouj.com/b05evsxif) 密码: 492l
+Windows x64 用户请在发布页下载 `Autovisor-<版本>-windows-amd64.zip`，完整解压后运行 `Autovisor.exe`。macOS 用户可下载同一发布页的源码压缩包，按上文的 macOS 步骤启动。 [GitHub Releases](https://github.com/OyamaMeek/Autovisor/releases)
 
-这是已经打包好的程序, 若需要**源代码**请于 Github 项目主页下载.
+发布时先更新 `modules/version.py`，将提交推送到 `origin`，再创建并推送与代码版本相同的带注释标签（例如 `3.19.0`）。GitHub Actions 会验证 Windows 构建并发布 ZIP，标签注释用作发行说明。
 
 #### 五、常见问题
 

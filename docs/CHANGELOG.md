@@ -209,3 +209,21 @@
 - **Git 提交** `045e46c4c8529f400bb75d52abd77f509dc06fb6 fix(exam): retry when the current question changes`，已推送 `origin/main`。
 
 ---
+
+## [2026-11-19 16:07] 自动构建 Windows 发行包
+
+- **需求/问题描述**
+  > 发布当前版本，并由 GitHub Actions 自动构建和上传 Windows 发行包。
+
+- **实际实现的功能与改动**
+  - 将程序版本设为 `3.19.0`，下载和更新检查指向 `OyamaMeek/Autovisor` 的 Releases。
+  - 推送版本标签后，在 Windows x64 校验版本并运行测试，构建 ZIP，解压核对配置、许可证和运行依赖，运行 `Autovisor.exe --help` 后发布。
+  - 本地启用 Chrome 的全量测试 135 项，132 项通过、3 项跳过。actionlint、依赖锁、PyInstaller 版本解析、源码 CLI 帮助、Python 语法和差异检查通过。
+
+- **涉及文件**
+  - `.github/workflows/release.yml`、`build.py`、`modules/version.py`、`modules/updater.py`、`README.md`
+  - `memory/plan.md`、`memory/progress.md`、`memory/verify.md`、`docs/CHANGELOG.md`
+
+- **Git 提交** 待提交。
+
+---

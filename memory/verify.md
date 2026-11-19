@@ -82,3 +82,9 @@
 - 修改前，三项 Chrome 回归用例确认选项变化或手动勾选后直接停止，并且没有发起重试。
 - 修改后，真实 Chrome 和本地 HTTP 服务验证重新读取选项后保存新答案、保留手动勾选，以及持续变化时只重试三次。
 - 启用 Chrome 的全量测试共 135 项，132 项通过。线上 DeepSeek 和两项 Windows 专用用例跳过。Python 语法、CLI 帮助和差异检查通过。未运行线上试卷。
+
+## Windows Release 自动构建验证
+
+- 修改前确认缺少 Release 工作流，版本号和更新地址尚未匹配本次发布。
+- 本地启用 Chrome 的全量测试 135 项，132 项通过，线上 DeepSeek 和两项 Windows 专用用例跳过。actionlint、依赖锁、PyInstaller 版本解析、源码 CLI 帮助、Python 语法和差异检查通过。
+- 通过 GitHub Actions 验证 Windows 构建和解压启动，通过 GitHub Release API 核对标签及 ZIP。

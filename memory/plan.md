@@ -47,3 +47,8 @@
 
 - 同一份试卷在等待 DeepSeek 期间发生变化时，丢弃尚未点击的答案，重新定位当前题。仅对未选的题目发起新请求，继续沿用逐题保存流程。
 - 连续变化最多重试三次。切换试卷、平台验证和其他错误沿用现有处理。
+
+## Windows Release 自动构建
+
+- 使用 `modules/version.py` 维护版本号。首次发布采用 `3.19.0`，下载和更新检查指向当前仓库 `OyamaMeek/Autovisor`。
+- 推送与代码版本相同的数字标签后，GitHub Actions 在 Windows x64 运行测试并复用 `build.py`。解压 ZIP 并运行程序帮助后，将 ZIP 和标签说明发布到 Release。

@@ -102,3 +102,5 @@
 - 检查 README 首页新增功能与配置、CLI 和答题实现一致，验证段落链接、资源路径和版本号。
 - 运行锁定依赖检查、启用 Chrome 的测试、CLI 帮助及 Git 差异检查。发布后核对标签指向的提交、Windows 构建结论、Latest Release 与 ZIP 下载。
 - README 内部链接和图片路径、版本号、依赖锁、CLI 帮助、macOS 启动脚本语法及差异检查通过。启用 Chrome 的本地测试 132 项通过，线上 DeepSeek 和两项 Windows 专用测试跳过。
+- GitHub 渲染了 README 的 4 个内部链接目标。远端 `3.19.2` 标签指向 `95ca090`，Windows 工作流 `44491313353` 和 macOS 工作流 `44491268813` 成功。
+- 公开 Release 为最新正式版本。ZIP 下载成功，SHA-256 与 GitHub 一致，完整性检查通过，主程序为 Windows x86-64，配置和许可证与源码一致。

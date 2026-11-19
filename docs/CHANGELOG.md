@@ -275,10 +275,12 @@
   - 程序版本更新到 `3.19.2`，纳入此前的维护者信息更新。
   - README 的 4 个内部链接、2 个图片路径、版本一致性、依赖锁、CLI 帮助、macOS 启动脚本语法和 Git 差异检查通过。
   - 启用真实 Chrome 的本地测试共 135 项，132 项通过、3 项按条件跳过。
+  - Windows 工作流 `44491313353` 通过并发布 Windows x64 ZIP。macOS Apple Silicon 和 Intel 冒烟测试通过。
+  - GitHub Latest Release 返回 `3.19.2`。从公开链接下载的 ZIP 与 GitHub SHA-256 一致，压缩包完整，Windows x86-64 主程序、配置模板和许可证已核对。
 
 - **涉及文件**
   - `README.md`、`modules/version.py`、`memory/`、`docs/CHANGELOG.md`
 
-- **Git 提交** 待提交。
+- **Git 提交** `95ca090392aedd7f81f5b5783ddd701f56ce0105 chore(release): prepare Autovisor 3.19.2`，已推送 `origin/main` 并标记为 `3.19.2`。
 
 ---

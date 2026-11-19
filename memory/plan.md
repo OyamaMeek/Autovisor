@@ -53,3 +53,8 @@
 - 使用 `modules/version.py` 维护版本号。下载和更新检查指向当前仓库 `OyamaMeek/Autovisor`。
 - 推送与代码版本相同的数字标签后，GitHub Actions 在 Windows x64 运行测试并复用 `build.py`。解压 ZIP 并运行程序帮助后，将 ZIP 和标签说明发布到 Release。
 - 打包时在 PyInstaller 内嵌的解释器启用 UTF-8，使中文帮助可通过管道或重定向输出。
+
+## 项目维护者信息
+
+- 将 README 项目链接和启动署名统一为 `OyamaMeek`，移除原维护者的个人公告、博客、赞赏入口及旧仓库链接。保留 MIT 许可证要求的原始版权声明。
+- 从课程结束流程、配置模板、Windows 构建及其检查中移除赞赏码，并移除仅用于显示赞赏码的 Pillow 依赖。旧配置中的赞赏选项由配置加载器忽略。

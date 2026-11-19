@@ -17,7 +17,6 @@ cdpUrl = http://127.0.0.1:9222
 ;自动滑块只支持登录页，课中安全验证仍需手动完成
 enableAutoCaptcha = False
 enableHideWindow = False
-showDonateCode = False
 
 [deepseek]
 ;填写自己的 DeepSeek API Key 启用自动答题，留空时手动作答

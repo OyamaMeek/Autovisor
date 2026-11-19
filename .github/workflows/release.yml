@@ -53,7 +53,6 @@ jobs:
           cmp config.ini.example "$package/config.ini"
           cmp LICENSE "$package/LICENSE"
           test -s "$package/data/mirrors.json"
-          test -s "$package/resources/QRcode.jpg"
           test -s "$package/resources/stealth.min.js"
           test -s "$package/internal/python3.dll"
           test -s "$package/internal/playwright/driver/node.exe"

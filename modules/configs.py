@@ -31,7 +31,6 @@ class Config:
             # 脚本选项
             self.enableAutoCaptcha = self.get_bool_field('script-option', 'enableAutoCaptcha')
             self.enableHideWindow = self.get_bool_field('script-option', 'enableHideWindow')
-            self.showDonateCode = self.get_bool_field("script-option", "showDonateCode")
             self.deepseek_api_key = self._config.get("deepseek", "api_key", raw=True, fallback="").strip()
             # 课程选项
             self.soundOff = self.get_bool_field('course-option', 'soundOff', fallback=True)

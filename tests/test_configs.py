@@ -72,7 +72,7 @@ class ConfigTests(unittest.TestCase):
             file.write(
                 "[user-account]\nusername=\npassword=\n"
                 "[browser-option]\ndriver=edge\nEXE_PATH=\n"
-                "[script-option]\nenableAutoCaptcha=true\nenableHideWindow=false\nshowDonateCode=true\n"
+                "[script-option]\nenableAutoCaptcha=true\nenableHideWindow=false\n"
                 "[course-option]\nsoundOff=true\n"
                 "[course-url]\nURL1=\n"
                 "[mirrors]\nprimary=https://mirror.example/simple\n"
@@ -110,7 +110,7 @@ class ConfigTests(unittest.TestCase):
             file.write(
                 "[user-account]\nusername=\npassword=\n"
                 "[browser-option]\ndriver=edge\nEXE_PATH=\n"
-                "[script-option]\nenableAutoCaptcha=false\nenableHideWindow=false\nshowDonateCode=false\n"
+                "[script-option]\nenableAutoCaptcha=false\nenableHideWindow=false\n"
                 "[course-option]\nsoundOff=true\n"
                 "[course-url]\nURL1=\n"
             )
@@ -129,7 +129,7 @@ class ConfigTests(unittest.TestCase):
             file.write(
                 "[user-account]\nusername=\npassword=\n"
                 "[browser-option]\ndriver=edge\nEXE_PATH=\n"
-                "[script-option]\nenableAutoCaptcha=false\nenableHideWindow=false\nshowDonateCode=false\n"
+                "[script-option]\nenableAutoCaptcha=false\nenableHideWindow=false\n"
                 "[course-option]\nsoundOff=true\n"
                 "[course-url]\nURL1=\n"
             )

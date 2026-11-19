@@ -1,23 +1,17 @@
 ##  Autovisor
 
-**Github项目主页：**[CXRunfree/Autovisor](https://github.com/CXRunfree/Autovisor)
+由 **OyamaMeek** 维护。 [GitHub 项目主页](https://github.com/OyamaMeek/Autovisor)
 
 ------
-#### 2026/9/15 公告
-
-感谢大家三年多以来的喜爱与支持~
-
-准备读研, 本项目佛系更新
-
 #### 2026/9/24 Autovisor-3.18.4 更新
 
 **本次更新:**
 
-- 新增融合共享课支持: 自动跳过 AI 随堂练习弹窗、展开折叠目录、关闭弹窗后恢复播放, 并读取课时真实学习进度 ([#158](https://github.com/CXRunfree/Autovisor/pull/158)).
+- 新增融合共享课支持: 自动跳过 AI 随堂练习弹窗、展开折叠目录、关闭弹窗后恢复播放, 并读取课时真实学习进度.
 
 **近期更新:**
 
-- 修复课程页卡死: 已读的"学前必读"弹窗是隐藏节点, 等它可见会一直等下去, 现在超时即跳过 ([#155](https://github.com/CXRunfree/Autovisor/pull/155)).
+- 修复课程页卡死: 已读的"学前必读"弹窗是隐藏节点, 等它可见会一直等下去, 现在超时即跳过.
 - 课时切换、目录识别的等待也加上超时, 异常页面不再长时间卡住.
 - 支持 Python 3.13.
 
@@ -187,10 +181,6 @@ Windows x64 用户请在发布页下载 `Autovisor-<版本>-windows-amd64.zip`�
 
    - 目前只处理视频课时, 非视频章节需要手动切到有视频的课时.
 
-10. 不想再弹赞赏码?
-
-    - 感谢您对本项目的支持~ 只需要设置 `showDonateCode = False` 就好了!
-
 ------
 #### 已知问题
 
@@ -201,11 +191,5 @@ Windows x64 用户请在发布页下载 `Autovisor-<版本>-windows-amd64.zip`�
 #### 写在最后
 
 觉得体验还不错? 请留下你宝贵的 Star ⭐, 并分享给更多有需要的人!
-
-或者为项目发电支持一下~
-
-<p align="left"><img src="resources/markdown/donate.png" width="200" alt="赞赏码"></p>
-
-**作者的 CSDN:** [欢迎关注~](https://blog.csdn.net/Runfreeone)
 
 **声明：本程序只可用于学习和研究计算机原理, 请于 24h 内删除所有存档！**

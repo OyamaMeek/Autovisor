@@ -51,7 +51,6 @@ if code != 0:
 
 os.mkdir(f"./dist/{name}/resources")
 os.mkdir(f"./dist/{name}/data")
-shutil.copyfile("./resources/QRcode.jpg", f"./dist/{name}/resources/QRcode.jpg")
 shutil.copyfile("./config.ini.example", f"./dist/{name}/config.ini")
 shutil.copyfile("./LICENSE", f"./dist/{name}/LICENSE")
 shutil.copyfile("./data/mirrors.json", f"./dist/{name}/data/mirrors.json")

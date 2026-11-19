@@ -7,13 +7,9 @@ def print_banner():
         " ██║  ██║╚██████╔╝   ██║   ╚██████╔╝ ╚████╔╝ ██║███████║╚██████╔╝██║  ██║",
         " ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝   ╚═══╝  ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝",
     ]
-    signature_lines = [
-        "by Github CXRunfree",
-    ]
     width = max(len(line) for line in banner_lines)
     print()
     for line in banner_lines:
         print(line)
-    for line in signature_lines:
-        print(line.rjust(width))
+    print("维护者 OyamaMeek".rjust(width))
     print()

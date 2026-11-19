@@ -90,3 +90,9 @@
 - 首次 Windows 运行 135 项测试，131 项通过、4 项跳过。ZIP 构建和内容检查通过，解压后的程序在重定向标准输出时使用 CP1252，打印中文帮助时抛出 `UnicodeEncodeError`，因此未创建 Release。macOS 的 Apple Silicon 和 Intel 冒烟测试通过。
 - `3.19.1` 的 Windows 工作流运行 `44485741541` 通过，135 项测试中 131 项通过、4 项跳过，解压后的 `Autovisor.exe --help` 成功输出中文。对应的 macOS Apple Silicon 和 Intel 冒烟测试通过。
 - 从公开 Release 下载 ZIP，SHA-256 与 GitHub 一致，全部 ZIP 条目通过完整性检查，主程序确认为 Windows x86-64。配置模板未包含凭证，程序更新接口返回 `3.19.1`。
+
+## 维护者信息验证
+
+- 核对 CLI 署名、新旧配置读取、更新链接测试数据、赞赏资源和 Windows 打包引用。确认旧身份的文本只出现在 MIT 许可证，运行项目测试套件和差异检查。
+- CLI 实际启动显示 `维护者 OyamaMeek`。启用 Chrome 的全量测试 135 项，132 项通过、3 项跳过。移除 Pillow 后，锁定依赖安装和默认测试套件通过，110 项通过、25 项按条件跳过。
+- 原作者姓名仅出现在许可证。Python 编译、CLI 帮助、`actionlint` 和差异检查通过。本次未构建新的 Windows 发行包。

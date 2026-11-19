@@ -20,7 +20,7 @@ cdpUrl = http://127.0.0.1:9222
 [script-option]
 enableAutoCaptcha = False
 enableHideWindow = False
-showDonateCode = False
+showDonateCode = True
 [course-option]
 soundOff = True
 limitMaxTime = 0

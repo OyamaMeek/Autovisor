@@ -245,3 +245,22 @@
 - **Git 提交** `f77b0eb80223208652db8987ad35b5b10fec507b fix(release): enable UTF-8 in the packaged runtime`，已推送 `origin/main`。
 
 ---
+
+## [2026-11-19 16:29] 更新 Autovisor 维护者信息
+
+- **需求/问题描述**
+  > 移除原作者的个人信息，将项目维护者署名改为 OyamaMeek。
+
+- **实际实现的功能与改动**
+  - README 和启动界面显示 `OyamaMeek`。移除旧仓库链接、个人公告、博客和赞赏码，保留 MIT 许可证要求的原始版权声明。
+  - 删除赞赏码显示逻辑、配置模板字段、Windows 打包引用和仅用于显示赞赏码的 Pillow 依赖。旧配置仍可读取。
+  - 启用 Chrome 的全量测试 135 项，132 项通过、3 项跳过。更新锁文件后，独立环境的默认测试套件、CLI 启动与帮助、Python 编译、`actionlint` 和差异检查通过。本次未生成新的 Windows 发行包。
+
+- **涉及文件**
+  - `README.md`、`Autovisor.py`、`modules/banner.py`、`modules/configs.py`、`modules/support.py`
+  - `config.ini.example`、`config.macos.ini.example`、`resources/`、`.gitignore`、`build.py`、`.github/workflows/release.yml`
+  - `pyproject.toml`、`uv.lock`、`tests/`、`memory/`、`docs/CHANGELOG.md`
+
+- **Git 提交** 待提交。
+
+---

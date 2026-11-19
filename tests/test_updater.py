@@ -9,9 +9,9 @@ from modules.version import __version__
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-RELEASE_PAGE = "https://github.com/CXRunfree/Autovisor/releases/tag/x"
+RELEASE_PAGE = "https://github.com/OyamaMeek/Autovisor/releases/tag/x"
 ASSET_URL = (
-    "https://github.com/CXRunfree/Autovisor/releases/download/3.19.0/"
+    "https://github.com/OyamaMeek/Autovisor/releases/download/3.19.0/"
     "Autovisor-3.19.0-windows-amd64.zip"
 )
 

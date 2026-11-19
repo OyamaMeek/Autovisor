@@ -16,8 +16,6 @@ EXE_PATH =
 enableAutoCaptcha = True
 ;是否自动隐藏浏览器窗口(默认:False)
 enableHideWindow = False
-;是否展示赞赏码(默认:True)
-showDonateCode = True
 
 [deepseek]
 ;填写自己的 DeepSeek API Key 启用自动答题，留空时手动作答

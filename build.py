@@ -36,6 +36,7 @@ cmd = [
     "--log-level=INFO",
     "--noconfirm",
     "-c",
+    "--python-option", "X utf8",
     "-i", os.path.join(ROOT, "resources", "zhs.ico"),
     "--onedir",
     "--contents-directory=internal",

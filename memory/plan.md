@@ -50,5 +50,6 @@
 
 ## Windows Release 自动构建
 
-- 使用 `modules/version.py` 维护版本号。首次发布采用 `3.19.0`，下载和更新检查指向当前仓库 `OyamaMeek/Autovisor`。
+- 使用 `modules/version.py` 维护版本号。下载和更新检查指向当前仓库 `OyamaMeek/Autovisor`。
 - 推送与代码版本相同的数字标签后，GitHub Actions 在 Windows x64 运行测试并复用 `build.py`。解压 ZIP 并运行程序帮助后，将 ZIP 和标签说明发布到 Release。
+- 打包时在 PyInstaller 内嵌的解释器启用 UTF-8，使中文帮助可通过管道或重定向输出。

@@ -219,10 +219,26 @@
   - 将程序版本设为 `3.19.0`，下载和更新检查指向 `OyamaMeek/Autovisor` 的 Releases。
   - 推送版本标签后，在 Windows x64 校验版本并运行测试，构建 ZIP，解压核对配置、许可证和运行依赖，运行 `Autovisor.exe --help` 后发布。
   - 本地启用 Chrome 的全量测试 135 项，132 项通过、3 项跳过。actionlint、依赖锁、PyInstaller 版本解析、源码 CLI 帮助、Python 语法和差异检查通过。
+  - 首轮 Windows 测试和构建通过，发行包在重定向输出时打印中文帮助失败，因此未创建 `3.19.0` Release。
 
 - **涉及文件**
   - `.github/workflows/release.yml`、`build.py`、`modules/version.py`、`modules/updater.py`、`README.md`
   - `memory/plan.md`、`memory/progress.md`、`memory/verify.md`、`docs/CHANGELOG.md`
+
+- **Git 提交** `ef045ac07d86e24f3bf222b4f87d6225bd6744f7 feat(release): automate Windows builds for version tags`，已推送 `origin/main`。
+
+---
+
+## [2026-11-19 16:11] 修复 Windows 发行包的中文输出
+
+- **需求/问题描述**
+  > Windows 发行包在重定向 `Autovisor.exe --help` 输出时，CP1252 无法编码中文，工作流终止发布。
+
+- **实际实现的功能与改动**
+  - 在 PyInstaller 内嵌的解释器启用 UTF-8。以 `3.19.1` 标签重新发布。
+
+- **涉及文件**
+  - `build.py`、`modules/version.py`、`README.md`、`memory/`、`docs/CHANGELOG.md`
 
 - **Git 提交** 待提交。
 

@@ -87,4 +87,5 @@
 
 - 修改前确认缺少 Release 工作流，版本号和更新地址尚未匹配本次发布。
 - 本地启用 Chrome 的全量测试 135 项，132 项通过，线上 DeepSeek 和两项 Windows 专用用例跳过。actionlint、依赖锁、PyInstaller 版本解析、源码 CLI 帮助、Python 语法和差异检查通过。
+- 首次 Windows 运行 135 项测试，131 项通过、4 项跳过。ZIP 构建和内容检查通过，解压后的程序在重定向标准输出时使用 CP1252，打印中文帮助时抛出 `UnicodeEncodeError`，因此未创建 Release。macOS 的 Apple Silicon 和 Intel 冒烟测试通过。
 - 通过 GitHub Actions 验证 Windows 构建和解压启动，通过 GitHub Release API 核对标签及 ZIP。

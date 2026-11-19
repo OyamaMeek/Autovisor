@@ -170,6 +170,6 @@
 - **涉及文件**
   - `modules/exam_answering.py`、`tests/test_answering_integration.py`、`README.md`、`memory/`、`docs/CHANGELOG.md`
 
-- **Git 提交** 待提交。
+- **Git 提交** `c206f8711d75a32ddd19035e0e6442bf684cf13d fix(exam): reload when the first question fails to load`，已推送 `origin/main`。
 
 ---

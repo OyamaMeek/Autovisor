@@ -206,6 +206,6 @@
   - `modules/exam_answering.py`、`tests/test_answering_integration.py`、`README.md`
   - `memory/plan.md`、`memory/progress.md`、`memory/verify.md`、`docs/CHANGELOG.md`
 
-- **Git 提交** 待提交。
+- **Git 提交** `045e46c4c8529f400bb75d52abd77f509dc06fb6 fix(exam): retry when the current question changes`，已推送 `origin/main`。
 
 ---

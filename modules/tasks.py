@@ -229,7 +229,7 @@ async def play_video(
             continue
 
 
-async def skip_questions(page: Page, event_loop) -> None:
+async def skip_questions(page: Page, event_loop, api_key: str) -> None:
     await page.wait_for_load_state("domcontentloaded")
     while True:
         try:
@@ -257,7 +257,7 @@ async def skip_questions(page: Page, event_loop) -> None:
                 for ques in total_ques:
                     await ques.click(timeout=500)
                     if not await dialog.locator(".answer:visible").count():
-                        await answer_question(dialog, ".topic-item")
+                        await answer_question(dialog, ".topic-item", api_key)
                         answered += 1
                 logger.event("课中答题", 题目数=len(total_ques), 已作答=answered)
                 await dialog.press("Escape", timeout=1000)

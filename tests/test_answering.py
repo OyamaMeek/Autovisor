@@ -1,7 +1,7 @@
+import os
 import unittest
 
-from modules.answering import AnswerError, _AnswerClient, ask_codex, parse_answer
-from acp.schema import AgentMessageChunk, AgentThoughtChunk, TextContentBlock
+from modules.answering import AnswerError, ask_deepseek, parse_answer
 
 
 class AnswerValidationTests(unittest.TestCase):
@@ -23,42 +23,17 @@ class AnswerValidationTests(unittest.TestCase):
 
 
 class AnswerClientTests(unittest.IsolatedAsyncioTestCase):
-    async def test_stream_uses_answer_chunks_and_excludes_reasoning(self):
-        client = _AnswerClient()
-        await client.session_update("test", AgentThoughtChunk(
-            session_update="agent_thought_chunk",
-            content=TextContentBlock(type="text", text="思考内容"),
-        ))
-        await client.session_update("test", AgentMessageChunk(
-            session_update="agent_message_chunk",
-            content=TextContentBlock(type="text", text="Warning: 配置提示"),
-        ))
-        for text in ('{"answers":', '[2]}'):
-            await client.session_update("test", AgentMessageChunk(
-                session_update="agent_message_chunk",
-                message_id="answer",
-                content=TextContentBlock(type="text", text=text),
-            ))
-        self.assertEqual(parse_answer(client.text, 2), [1])
-        response = await client.request_permission("test", None, [])
-        self.assertEqual(response.outcome.outcome, "cancelled")
-
-    async def test_incomplete_question_fails_before_starting_agent(self):
+    async def test_incomplete_question_fails_before_request(self):
         for question, options in (("", ["a", "b"]), ("题目", []), ("题目", ["a", ""])):
-            with self.subTest(question=question, options=options), self.assertRaises(AnswerError):
-                await ask_codex(question, options)
+            with self.subTest(question=question, options=options), self.assertRaisesRegex(AnswerError, "不完整"):
+                await ask_deepseek(question, options, "key-for-test")
 
-    async def test_new_message_replaces_commentary_and_bounds_answer_length(self):
-        client = _AnswerClient()
-        for message_id, text in (("comment", "准备作答"), ("answer", '{"answers":[1]}')):
-            await client.session_update("test", AgentMessageChunk(
-                session_update="agent_message_chunk", message_id=message_id,
-                content=TextContentBlock(type="text", text=text),
-            ))
-        self.assertEqual(parse_answer(client.text, 2), [0])
-        await client.session_update("test", AgentMessageChunk(
-            session_update="agent_message_chunk", message_id="answer",
-            content=TextContentBlock(type="text", text="x" * 5000),
-        ))
-        self.assertTrue(client.overflow)
-        self.assertEqual(len(client.text), 4096)
+    async def test_invalid_key_cannot_be_used_as_an_authorization_header(self):
+        with self.assertRaisesRegex(AnswerError, "API Key 格式无效"):
+            await ask_deepseek("题目", ["a", "b"], "key\ninvalid")
+
+    @unittest.skipUnless(os.environ.get("AUTOVISOR_TEST_DEEPSEEK") == "1", "需要显式启用 DeepSeek 服务测试")
+    async def test_live_deepseek_answers_a_text_question(self):
+        api_key = os.environ.get("DEEPSEEK_API_KEY", "").strip()
+        self.assertTrue(api_key, "请先设置 DEEPSEEK_API_KEY")
+        self.assertEqual(await ask_deepseek("单选题：1 + 1 等于多少？", ["3", "2", "5"], api_key), [1])

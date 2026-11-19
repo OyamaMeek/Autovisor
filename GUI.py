@@ -6,7 +6,7 @@ import tkinter as tk
 import sv_ttk
 
 # === 配置文件初始化 ===
-config = configparser.ConfigParser()
+config = configparser.ConfigParser(interpolation=None)
 config_file = 'config.ini'
 config.read(config_file, encoding="utf-8")
 
@@ -24,6 +24,7 @@ def show_help():
         "时长限制：程序运行的最大时间，0 表示不限\n"
         "倍速播放：最大 1.8（平台限制）\n\n"
         "【选填功能】\n"
+        "DeepSeek API Key：填写后启用自动答题，留空时手动作答\n"
         "自动跳过验证码：自动完成滑动验证\n"
         "隐藏浏览器窗口：运行时最小化浏览器\n"
         "静音播放：关闭视频声音\n\n"
@@ -56,6 +57,7 @@ def read_inputs():
     return {
         "username": username_entry.get(),
         "password": password_entry.get(),
+        "deepseek_api_key": deepseek_key_entry.get().strip(),
         "course_url": course_entry.get(),
         "limit_time": time_limit_entry.get(),
         "speed": speed_entry.get(),
@@ -77,6 +79,9 @@ def save_and_run():
     config.set('course-option', 'limitmaxtime', inputs['limit_time'])
     config.set('course-option', 'limitspeed', inputs['speed'])
     config.set('course-option', 'soundoff', inputs['mute'])
+    if not config.has_section('deepseek'):
+        config.add_section('deepseek')
+    config.set('deepseek', 'api_key', inputs['deepseek_api_key'])
 
     with open(config_file, 'w', encoding="utf-8") as f:
         config.write(f)
@@ -140,6 +145,11 @@ ttk.Radiobutton(frame, text="False", variable=hide_var, value="False").grid(row=
 ttk.Label(frame, text="静音播放(闭嘴)：", font=("Microsoft YaHei", 10)).grid(row=9, column=1)
 ttk.Radiobutton(frame, text="True", variable=mute_var, value="True").grid(row=9, column=3, sticky="w")
 ttk.Radiobutton(frame, text="False", variable=mute_var, value="False").grid(row=9, column=3, sticky="e")
+
+ttk.Label(frame, text="DeepSeek API Key：", font=("Microsoft YaHei", 10)).grid(row=10, column=1)
+deepseek_key_entry = ttk.Entry(frame, show='*')
+deepseek_key_entry.insert(0, config.get('deepseek', 'api_key', fallback=''))
+deepseek_key_entry.grid(row=10, column=3)
 
 # 按钮区域 - 使用Frame包装并调整布局
 button_frame = ttk.Frame(root)

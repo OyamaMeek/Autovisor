@@ -260,7 +260,9 @@ async def main(config) -> bool:
                         wait_for_verify(page, config, event_loop_verify)
                     ),
                     asyncio.create_task(video_optimize(page, config)),
-                    asyncio.create_task(skip_questions(page, event_loop_answer)),
+                    asyncio.create_task(
+                        skip_questions(page, event_loop_answer, config.deepseek_api_key)
+                    ),
                     asyncio.create_task(play_video(page, playback_enabled)),
                 ]
             )
@@ -412,7 +414,8 @@ def cli() -> int:
             连接现有浏览器=config.attach_existing_chrome,
             账号="已填写" if config.username else "未填写",
             密码="已填写" if config.password else "未填写",
-            自动答题=config.enableAutoCaptcha,
+            自动滑块=config.enableAutoCaptcha,
+            自动答题=bool(config.deepseek_api_key),
             隐藏窗口=config.enableHideWindow,
             静音=config.soundOff,
             倍速=config.limitSpeed,

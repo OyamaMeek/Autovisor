@@ -8,9 +8,9 @@
 ``FUSION_CATALOG``(识别 ``.chapter-content-second / .finish-icon / .item-name``)。
 即"目录识别"和"课时循环"官方已支持。本适配器补齐官方缺失的三个融合页专有行为:
 
-1. ``skip_ai_exercise`` — **AI 随堂练习弹窗**调用本地 Codex ACP 作答并提交。
+1. ``skip_ai_exercise`` — **AI 随堂练习弹窗**调用 DeepSeek API 作答并提交。
    - 视频播到 AI 时间点时, 智慧树会暂停视频并弹出 ``.ai-class-exercise-dialog``;
-     读取题干、选项并校验 Codex 答案后提交。
+     读取题干、选项并校验 DeepSeek 答案后提交。
    - 关闭后视频处于暂停, 需恢复播放。
 2. ``expand_catalog`` — 融合目录的折叠小节展开 (官方 `get_filtered_class` 不展开)。
 3. ``resume_video`` -- 弹窗/异常后恢复视频播放的兜底。
@@ -19,7 +19,7 @@
 --------
 与官方 3.18.3 对齐: 复用 ``modules.logger.Logger`` 的
 ``event`` / ``debug_throttled`` / ``summarize_exception``; 只提供"适配小函数",
-由官方 ``tasks.skip_questions`` 或 ``course_runner`` 在融合 catalog 分支调用,
+由 ``course_runner`` 和 ``course_playback`` 在融合 catalog 分支调用,
 不复制官方主循环, 便于独立测试与回退。
 """
 from playwright.async_api import Page
@@ -114,14 +114,14 @@ class FusionAdapter:
             )
 
     @staticmethod
-    async def skip_ai_exercise(page: Page) -> bool:
-        """通过本地 Codex ACP 作答并提交，关闭弹窗后恢复播放。"""
+    async def skip_ai_exercise(page: Page, api_key: str) -> bool:
+        """通过 DeepSeek API 作答并提交，关闭弹窗后恢复播放。"""
         if not await FusionAdapter.ai_exercise_visible(page):
             return False
-        logger.info("检测到 AI随堂练习弹窗，准备调用本地 Codex.")
+        logger.info("检测到 AI 随堂练习弹窗.")
         dialog = page.locator(AI_CLASS_EXERCISE_DIALOG)
         try:
-            await answer_question(dialog, ".option")
+            await answer_question(dialog, ".option", api_key)
             await page.wait_for_timeout(600)
             await page.locator(_SUBMIT_SELECTOR).click(timeout=1000)
             await dialog.wait_for(state="hidden", timeout=5000)

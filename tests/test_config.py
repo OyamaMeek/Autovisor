@@ -42,6 +42,11 @@ class ConfigTests(unittest.TestCase):
             self.assertEqual(config.driver, "chrome")
             self.assertFalse(config.attach_existing_chrome)
             self.assertTrue(config.exe_path.endswith("Google Chrome.app"))
+            self.assertEqual(config.deepseek_api_key, "")
+            for configured, expected in (("   ", ""), ("  key-for-test  ", "key-for-test")):
+                with self.subTest(configured=configured):
+                    path.write_text(f"{CONFIG}\n[deepseek]\napi_key = {configured}\n", encoding="utf-8")
+                    self.assertEqual(Config(path, mirrors_path).deepseek_api_key, expected)
 
     @unittest.skipIf(os.name == "nt", "POSIX permission test")
     def test_saved_cookies_are_owner_only(self):

@@ -115,7 +115,9 @@ async def learn_lesson(
                 continue
 
             # 融合共享课: AI 随堂练习弹窗自动选作答+提交(官方 learn_lesson 未处理)。
-            if catalog.name == "fusion" and await FusionAdapter.skip_ai_exercise(page):
+            if catalog.name == "fusion" and await FusionAdapter.skip_ai_exercise(
+                page, config.deepseek_api_key
+            ):
                 retry_count = 0
                 last_activity = time.monotonic()
                 continue

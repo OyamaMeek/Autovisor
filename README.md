@@ -34,7 +34,7 @@
 - **自动通过登录滑块验证(可选)**
 - **自动播放和切换下一集**
 - **自动跳过弹窗和弹题**
-- **通过本地 Codex ACP 作答普通课中题目与融合课随堂练习**
+- **通过 DeepSeek API 作答普通课中题目与融合课随堂练习**
 - **自动静音、设置指定倍速**
 - **自动检测暂停并自动续播**
 - **支持智慧共享课、翻转课、融合共享课**
@@ -58,6 +58,7 @@
    - 默认启动系统自带的 Edge 浏览器;
    - 文件里的 **EXE_PATH 项** 用于自定义浏览器路径, 需要精确到**浏览器可执行文件的位置**, 可以保持默认不填;
    - 不知道浏览器的安装路径? 见下方 **五、常见问题**.
+   - 启用自动答题需要填写自己的 API Key。 [DeepSeek API 自动答题](#deepseek-api-自动答题)
    - 确认 **保存修改** 后再退出.
 
    <p align="left"><img src="resources/markdown/config_detail.png" width="600" alt="config.ini 配置说明"></p>
@@ -94,28 +95,20 @@ cp config.macos.ini.example config.macos.ini
 
 首次运行会自动部署环境 (安装 `uv`、依赖和必要的浏览器), 之后直接启动. 环境或配置变化时会自动重新部署, 也可用 `./run_macos.sh --setup` 强制重建.
 
-**本地 Codex ACP 答题**
+##### DeepSeek API 自动答题
 
-先安装 Node.js、Codex CLI 和 [Codex ACP 适配器](https://github.com/agentclientprotocol/codex-acp)，并完成登录：
+在 DeepSeek 开放平台创建自己的 API Key。打开 `config.ini`（macOS 使用 `config.macos.ini`），将 Key 填入 `[deepseek]` 的 `api_key` 并保存。旧配置可以直接追加这一段。使用图形配置工具时，可在 **DeepSeek API Key** 输入框填写并保存。 [创建 API Key](https://platform.deepseek.com/api_keys)
 
-```bash
-npm install -g @openai/codex @agentclientprotocol/codex-acp@2.6.0
-codex login
-codex-acp --version
+```ini
+[deepseek]
+api_key =
 ```
 
-从能够找到 `codex-acp` 的终端启动 Autovisor。程序会将题干、可见选项通过 ACP 发送给本机 Codex，校验返回的选项编号后点击作答；融合练习随后点击提交，关闭弹窗后恢复播放。支持文本单选、多选与判断题。模型和认证沿用本机 Codex 配置，推理使用其配置的服务，并非离线模型。
+填写后启动 Autovisor。程序会把题干和可见选项发送给 DeepSeek 的 `deepseek-flash`，校验返回的选项编号后作答。融合练习完成后会提交并恢复播放。支持文本单选、多选和判断题，每题请求上限为 120 秒，费用从用户的 DeepSeek 账户扣除。 [DeepSeek 模型与价格](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/)
 
-也可将适配器安装在项目内，并在启动时指定 PATH：
+Key 留空、API 请求失败或答案无效时，程序会保留题目并等待手动作答。`studywisdomh5` 新版弹题、`hike` 课程和图片题仍需手动处理。
 
-```bash
-npm install --prefix .autovisor/acp @agentclientprotocol/codex-acp@2.6.0
-PATH="$PWD/.autovisor/acp/node_modules/.bin:$PATH" ./run_macos.sh
-```
-
-适配器需要 2.6.0 或以上版本，使用 ACP 消息编号区分模型答案与服务提示。每题调用上限 120 秒。缺少适配器、登录失效、模型不可用、超时或答案无效时，会保留题目并提示手动处理；手动关闭弹窗后继续。`studywisdomh5` 新版弹题、`hike` 课程和图片题尚未适配，仍需手动处理。
-
-验证命令：`uv run python -m unittest discover -s tests -v`。设置 `AUTOVISOR_TEST_BROWSER=1` 可运行真实 Chrome 行为测试；同时设置 `AUTOVISOR_TEST_CODEX_ACP=1` 可验证本机 Codex ACP 的真实答题调用（需要 Chrome、适配器及有效的 Codex 登录）。这些测试使用本地题目页面，不提交课程平台的答案。
+测试命令为 `uv run python -m unittest discover -s tests -v`。设置 `AUTOVISOR_TEST_BROWSER=1` 可运行真实 Chrome 和本地 HTTP 服务的答题测试。设置 `AUTOVISOR_TEST_DEEPSEEK=1` 和 `DEEPSEEK_API_KEY` 可另外测试一次真实 DeepSeek 请求，测试题为 `1 + 1`。
 
 #### 四、发行版下载
 

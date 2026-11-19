@@ -17,6 +17,10 @@ enableHideWindow = False
 ;是否展示赞赏码(默认:True)
 showDonateCode = True
 
+[deepseek]
+;填写自己的 DeepSeek API Key 启用自动答题，留空时手动作答
+api_key =
+
 [course-option]
 ;限制每门课程刷课时长/min (不限制:0)
 limitMaxTime = 30

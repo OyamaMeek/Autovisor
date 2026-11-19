@@ -20,3 +20,23 @@
 - **Git 提交**：`7f45b4e38fd3eb6c85b670b113b66c67427e7b64 feat(answering): answer course questions with local Codex ACP`，已推送 `origin/main`；本条提交记录通过后续文档提交补记。
 
 ---
+
+## [2026-11-19 11:22] 改用 DeepSeek API 自动答题
+
+- **需求/问题描述**
+  > 做题时调用 DeepSeek API，由用户填写自己的 API Key。
+
+- **实际实现的功能与改动**
+  - 普通课中题目与融合随堂练习使用 `deepseek-flash` 获取答案。响应须正常结束，选项编号和当前题目须通过校验。Key 留空或请求失败时等待手动作答。
+  - Windows 和 macOS 配置示例提供 `[deepseek] api_key`，图形界面可填写、保存和清除 Key。锁文件已移除 ACP 依赖。
+  - 全量测试 114 项，111 项通过、3 项跳过。真实 Chrome 与本地 HTTP 服务验证了答题和提交路径。Tk Key 输入行为、锁文件、CLI 帮助、Python 编译与差异检查通过。线上 DeepSeek 请求需要用户的有效 Key，本次未验证。
+
+- **涉及文件**
+  - `Autovisor.py`、`GUI.py`、`config.ini.example`、`config.macos.ini.example`
+  - `modules/answering.py`、`modules/configs.py`、`modules/course_playback.py`、`modules/fusion_adapter.py`、`modules/tasks.py`
+  - `tests/test_answering.py`、`tests/test_answering_integration.py`、`tests/test_config.py`
+  - `pyproject.toml`、`uv.lock`、`README.md`、`memory/`、`docs/CHANGELOG.md`
+
+- **Git 提交** 待提交
+
+---

@@ -153,6 +153,6 @@
 - **涉及文件**
   - `modules/answering.py`、`tests/test_answering_integration.py`、`README.md`、`memory/`、`docs/CHANGELOG.md`
 
-- **Git 提交** 待提交。
+- **Git 提交** `4e0c6844cdfe0be1e53cbc8f389cf0553b101c03 feat(answering): save DeepSeek answers to Markdown`，已推送 `origin/main`。
 
 ---

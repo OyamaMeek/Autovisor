@@ -37,6 +37,6 @@
   - `tests/test_answering.py`、`tests/test_answering_integration.py`、`tests/test_config.py`
   - `pyproject.toml`、`uv.lock`、`README.md`、`memory/`、`docs/CHANGELOG.md`
 
-- **Git 提交** 待提交
+- **Git 提交** `adf454372d27cbb8b7d691ee0d33b0e9746ed6e8 feat(answering): use DeepSeek API with a user-provided key`，已推送 `origin/main`。
 
 ---

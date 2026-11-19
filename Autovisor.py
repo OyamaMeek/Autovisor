@@ -23,10 +23,12 @@ from modules.diagnostics import check_browser, check_course
 from modules.exam_answering import watch_exam_pages
 from modules.login import (
     LOGIN_PASSWORD_SELECTOR,
+    LOGIN_STUDENT_ID_SELECTOR,
     LOGIN_SUBMIT_SELECTOR,
     LOGIN_USERNAME_SELECTOR,
     accept_login_terms,
     is_login_page,
+    select_login_school,
     wait_for_login_complete,
 )
 from modules.logger import Logger
@@ -167,25 +169,25 @@ async def auto_login(context: BrowserContext, page: Page, config, modules=None) 
 
     if config.username and config.password:
         try:
-            username = await page.wait_for_selector(
-                LOGIN_USERNAME_SELECTOR, state="visible", timeout=30000
-            )
-            password = await page.wait_for_selector(
-                LOGIN_PASSWORD_SELECTOR, state="visible", timeout=30000
-            )
-            logger.event("自动登录", 方式="账号密码", 账号="已填写")
-            await username.fill(config.username)
-            await password.fill(config.password)
-            await accept_login_terms(page)
-            submit = await page.wait_for_selector(
-                LOGIN_SUBMIT_SELECTOR, state="visible", timeout=30000
-            )
-            await page.wait_for_timeout(500)
-            await submit.click()
+            if not config.school or await select_login_school(page, config.school):
+                username_selector = LOGIN_STUDENT_ID_SELECTOR if config.school else LOGIN_USERNAME_SELECTOR
+                username = await page.wait_for_selector(username_selector, state="visible", timeout=30000)
+                password = await page.wait_for_selector(
+                    f":is({LOGIN_PASSWORD_SELECTOR}):visible", state="visible", timeout=30000
+                )
+                logger.event("自动登录", 方式="学号" if config.school else "账号密码", 账号="已填写")
+                await username.fill(config.username, timeout=30000)
+                await password.fill(config.password, timeout=30000)
+                await accept_login_terms(page)
+                await page.wait_for_timeout(500)
+                await page.locator(f":is({LOGIN_SUBMIT_SELECTOR}):visible").first.click(timeout=30000)
+            else:
+                logger.warn("找到多个同名学校，请在浏览器中选择学校并完成登录。", shift=True)
         except TimeoutError:
             if is_login_page(page.url):
-                logger.warn("未找到自动登录控件,请在浏览器中手动完成登录.", shift=True)
-                logger.event("自动登录", 方式="手动", 原因="未找到登录控件")
+                logger.warn("自动登录超时，请核对学校全称或在浏览器中手动完成登录。"
+                            if config.school else "未找到自动登录控件,请在浏览器中手动完成登录.", shift=True)
+                logger.event("自动登录", 方式="手动", 原因="自动登录超时")
 
     captcha_task = None
     if config.enableAutoCaptcha and modules:

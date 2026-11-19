@@ -5,6 +5,7 @@ from playwright.async_api import Page
 
 LOGIN_HOSTS = {"login.zhihuishu.com", "passport.zhihuishu.com"}
 LOGIN_USERNAME_SELECTOR = "#lUsername, input[name='mobile']"
+LOGIN_STUDENT_ID_SELECTOR = "input[name='unid']"
 LOGIN_PASSWORD_SELECTOR = "#lPassword, input[type='password']"
 LOGIN_SUBMIT_SELECTOR = ".wall-sub-btn, .btn-block__grandient_login, button[type='submit']"
 
@@ -26,6 +27,17 @@ async def wait_for_login_complete(
         wait_until="commit",
         timeout=timeout,
     )
+
+
+async def select_login_school(page: Page, school: str) -> bool:
+    await page.locator("#tab-2").click(timeout=30000)
+    await page.get_by_role("combobox").fill(school, timeout=30000)
+    option = page.get_by_role("option", name=school, exact=True)
+    await option.first.wait_for(timeout=15000)
+    if await option.count() != 1:
+        return False
+    await option.click(timeout=15000)
+    return True
 
 
 async def accept_login_terms(page: Page) -> None:

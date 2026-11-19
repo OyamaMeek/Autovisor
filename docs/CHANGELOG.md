@@ -59,3 +59,20 @@
 - **Git 提交** `ecaac6c52bb860cc8bcaf595eaf30f3051cfbc4e feat(answering): support Zhihuishu assignments and exams`，已推送 `origin/main`。
 
 ---
+
+## [2026-11-19 12:05] 支持智慧树学号登录
+
+- **需求/问题描述**
+  > 支持通过学校、学号和密码登录智慧树。
+
+- **实际实现的功能与改动**
+  - `[user-account]` 可以填写 `school`。程序在学号登录标签精确匹配学校全称，再提交学号和密码。学校留空时继续使用手机号登录。Windows 和 macOS 配置模板及图形配置工具均支持学校字段。
+  - 真实 Chrome 验证线上公开表单的学校选择，以及本地学号与手机号的提交行为。Tk 验证保存、重读和清空学校字段。全量测试 120 项，117 项通过、3 项跳过。CLI 帮助、锁文件和差异检查通过。真实账号认证未验证。
+
+- **涉及文件**
+  - `Autovisor.py`、`modules/configs.py`、`modules/login.py`、`GUI.py`
+  - `config.ini.example`、`config.macos.ini.example`、`README.md`、`tests/test_login.py`、`memory/`、`docs/CHANGELOG.md`
+
+- **Git 提交** 待提交。
+
+---

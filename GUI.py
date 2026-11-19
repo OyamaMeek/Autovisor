@@ -19,7 +19,8 @@ default_exepath = ""
 def show_help():
     help_text = (
         "【必要配置说明】\n"
-        "账号密码：可选项，如留空需手动登录\n"
+        "账号密码：可选项，留空时手动登录\n"
+        "学号登录：在账号栏填学号，并填写智慧树下拉列表中的学校全称\n"
         "课程链接：从智慧树课程页面复制链接（以 studyvideoh5.zhihuishu.com 开头）\n"
         "时长限制：程序运行的最大时间，0 表示不限\n"
         "倍速播放：最大 1.8（平台限制）\n\n"
@@ -57,6 +58,7 @@ def read_inputs():
     return {
         "username": username_entry.get(),
         "password": password_entry.get(),
+        "school": school_entry.get().strip(),
         "deepseek_api_key": deepseek_key_entry.get().strip(),
         "course_url": course_entry.get(),
         "limit_time": time_limit_entry.get(),
@@ -72,6 +74,7 @@ def save_and_run():
     config.set('course-url', 'URL1', inputs['course_url'])
     config.set('user-account', 'username', inputs['username'])
     config.set('user-account', 'password', inputs['password'])
+    config.set('user-account', 'school', inputs['school'])
     config.set('browser-option', 'driver', default_driver)
     config.set('browser-option', 'exe_path', default_exepath)
     config.set('script-option', 'enableautocaptcha', inputs['auto_captcha'])
@@ -92,7 +95,7 @@ def save_and_run():
 # === GUI 构建 ===
 root = tk.Tk()
 root.title("智慧树刷课助手")
-root.geometry("660x480+80+60")
+root.geometry("660x510+80+60")
 root.resizable(False, False)
 sv_ttk.set_theme("light")
 ttk.Label(root, text="智慧树刷课助手", font=("Microsoft YaHei", 20)).pack(pady=25)
@@ -103,7 +106,7 @@ frame.pack()
 # 必填项
 ttk.Label(frame, text="必要配置:", font=("Microsoft YaHei", 15)).grid(row=0, column=1)
 
-ttk.Label(frame, text="手机号：", font=("Microsoft YaHei", 10)).grid(row=1, column=1)
+ttk.Label(frame, text="手机号或学号：", font=("Microsoft YaHei", 10)).grid(row=1, column=1)
 username_entry = ttk.Entry(frame)
 username_entry.grid(row=1, column=3)
 
@@ -111,19 +114,24 @@ ttk.Label(frame, text="密码：", font=("Microsoft YaHei", 10)).grid(row=2, col
 password_entry = ttk.Entry(frame, show='*')
 password_entry.grid(row=2, column=3)
 
-ttk.Label(frame, text="课程链接：", font=("Microsoft YaHei", 10)).grid(row=3, column=1)
+ttk.Label(frame, text="学校全称（学号登录时填写）：", font=("Microsoft YaHei", 10)).grid(row=3, column=1)
+school_entry = ttk.Entry(frame)
+school_entry.insert(0, config.get('user-account', 'school', fallback=''))
+school_entry.grid(row=3, column=3)
+
+ttk.Label(frame, text="课程链接：", font=("Microsoft YaHei", 10)).grid(row=4, column=1)
 course_entry = ttk.Entry(frame)
-course_entry.grid(row=3, column=3)
+course_entry.grid(row=4, column=3)
 
-ttk.Label(frame, text="时长限制：", font=("Microsoft YaHei", 10)).grid(row=4, column=1)
+ttk.Label(frame, text="时长限制：", font=("Microsoft YaHei", 10)).grid(row=5, column=1)
 time_limit_entry = ttk.Entry(frame)
-time_limit_entry.grid(row=4, column=3)
+time_limit_entry.grid(row=5, column=3)
 
-ttk.Label(frame, text="倍速：", font=("Microsoft YaHei", 10)).grid(row=5, column=1)
+ttk.Label(frame, text="倍速：", font=("Microsoft YaHei", 10)).grid(row=6, column=1)
 speed_entry = ttk.Entry(frame)
-speed_entry.grid(row=5, column=3)
+speed_entry.grid(row=6, column=3)
 
-ttk.Label(frame, text="").grid(row=6, column=1, pady=15)
+ttk.Label(frame, text="").grid(row=7, column=1, pady=15)
 
 # 初始化选项变量
 verify_var = tk.StringVar(value="False")
@@ -131,25 +139,25 @@ hide_var = tk.StringVar(value="False")
 mute_var = tk.StringVar(value="False")
 
 # 自动跳过验证码
-ttk.Label(frame, text="可选配置:", font=("Microsoft YaHei", 15)).grid(row=6, column=1)
-ttk.Label(frame, text="自动跳过验证码：", font=("Microsoft YaHei", 10)).grid(row=7, column=1)
-ttk.Radiobutton(frame, text="True", variable=verify_var, value="True").grid(row=7, column=3, sticky="w")
-ttk.Radiobutton(frame, text="False", variable=verify_var, value="False").grid(row=7, column=3, sticky="e")
+ttk.Label(frame, text="可选配置:", font=("Microsoft YaHei", 15)).grid(row=7, column=1)
+ttk.Label(frame, text="自动跳过验证码：", font=("Microsoft YaHei", 10)).grid(row=8, column=1)
+ttk.Radiobutton(frame, text="True", variable=verify_var, value="True").grid(row=8, column=3, sticky="w")
+ttk.Radiobutton(frame, text="False", variable=verify_var, value="False").grid(row=8, column=3, sticky="e")
 
 # 隐藏浏览器窗口
-ttk.Label(frame, text="隐藏浏览器窗口：", font=("Microsoft YaHei", 10)).grid(row=8, column=1)
-ttk.Radiobutton(frame, text="True", variable=hide_var, value="True").grid(row=8, column=3, sticky="w")
-ttk.Radiobutton(frame, text="False", variable=hide_var, value="False").grid(row=8, column=3, sticky="e")
+ttk.Label(frame, text="隐藏浏览器窗口：", font=("Microsoft YaHei", 10)).grid(row=9, column=1)
+ttk.Radiobutton(frame, text="True", variable=hide_var, value="True").grid(row=9, column=3, sticky="w")
+ttk.Radiobutton(frame, text="False", variable=hide_var, value="False").grid(row=9, column=3, sticky="e")
 
 # 静音播放
-ttk.Label(frame, text="静音播放(闭嘴)：", font=("Microsoft YaHei", 10)).grid(row=9, column=1)
-ttk.Radiobutton(frame, text="True", variable=mute_var, value="True").grid(row=9, column=3, sticky="w")
-ttk.Radiobutton(frame, text="False", variable=mute_var, value="False").grid(row=9, column=3, sticky="e")
+ttk.Label(frame, text="静音播放(闭嘴)：", font=("Microsoft YaHei", 10)).grid(row=10, column=1)
+ttk.Radiobutton(frame, text="True", variable=mute_var, value="True").grid(row=10, column=3, sticky="w")
+ttk.Radiobutton(frame, text="False", variable=mute_var, value="False").grid(row=10, column=3, sticky="e")
 
-ttk.Label(frame, text="DeepSeek API Key：", font=("Microsoft YaHei", 10)).grid(row=10, column=1)
+ttk.Label(frame, text="DeepSeek API Key：", font=("Microsoft YaHei", 10)).grid(row=11, column=1)
 deepseek_key_entry = ttk.Entry(frame, show='*')
 deepseek_key_entry.insert(0, config.get('deepseek', 'api_key', fallback=''))
-deepseek_key_entry.grid(row=10, column=3)
+deepseek_key_entry.grid(row=11, column=3)
 
 # 按钮区域 - 使用Frame包装并调整布局
 button_frame = ttk.Frame(root)

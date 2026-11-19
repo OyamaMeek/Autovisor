@@ -96,6 +96,12 @@ cp config.macos.ini.example config.macos.ini
 
 首次运行会自动部署环境 (安装 `uv`、依赖和必要的浏览器), 之后直接启动. 环境或配置变化时会自动重新部署, 也可用 `./run_macos.sh --setup` 强制重建.
 
+##### 学号登录
+
+在 `config.ini`（macOS 使用 `config.macos.ini`）的 `[user-account]` 中，将 `username` 填为学号，并填写 `password` 和 `school`。`school` 填智慧树登录页下拉列表中显示的学校全称。使用图形配置工具时，填写 **手机号或学号**、**密码** 和 **学校全称**。
+
+`school` 留空时，`username` 填手机号。账号或密码留空时，在浏览器中手动登录。
+
 ##### DeepSeek API 自动答题
 
 在 DeepSeek 开放平台创建自己的 API Key。打开 `config.ini`（macOS 使用 `config.macos.ini`），将 Key 填入 `[deepseek]` 的 `api_key` 并保存。旧配置可以直接追加这一段。使用图形配置工具时，可在 **DeepSeek API Key** 输入框填写并保存。 [创建 API Key](https://platform.deepseek.com/api_keys)

@@ -13,6 +13,7 @@ class ConfigError(Exception):
 class Config:
     def __init__(self, config_path=None, mirrors_path=None):
         self.config_path = config_path
+        self.login_url = "https://passport.zhihuishu.com/login"
         if config_path:
             self._config = configparser.ConfigParser()
             # 用户常量
@@ -20,6 +21,9 @@ class Config:
             self.driver = self.get_driver()
             self.username = self._config.get('user-account', 'username', raw=True)
             self.password = self._config.get('user-account', 'password', raw=True)
+            self.school = self._config.get('user-account', 'school', raw=True, fallback='').strip()
+            if self.school:
+                self.login_url = "https://login.zhihuishu.com/?origin=zhs"
             # 浏览器选项
             self.exe_path = self._config.get('browser-option', 'EXE_PATH', raw=True)
             self.attach_existing_chrome = self.get_bool_field('browser-option', 'attachExistingChrome', fallback=False)
@@ -34,7 +38,6 @@ class Config:
             self.course_match_rule = re.compile("https://[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]")
             self.course_urls = self.get_course_urls()
         # 登录
-        self.login_url = "https://passport.zhihuishu.com/login"
         self.block_js = '''return document.getElementsByClassName("yidun_jigsaw")[0].src'''
         self.bg_js = '''return document.getElementsByClassName("yidun_bg-img")[0].src'''
         # 弹窗

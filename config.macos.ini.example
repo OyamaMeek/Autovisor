@@ -1,7 +1,9 @@
 [user-account]
-;配置账号密码，留空则打开网页后需手动登录
+;学校留空时 username 填手机号，填写学校全称时 username 填学号
+;账号或密码留空则在浏览器中手动登录
 username =
 password =
+school =
 
 [browser-option]
 ;macOS 默认启动独立 Chrome，EXE_PATH 通常留空

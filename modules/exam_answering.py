@@ -13,6 +13,7 @@ from modules.tasks import has_visible_verification
 
 logger = Logger()
 PAPER_LOAD_TIMEOUT_MS = 15000
+QUESTION_CHANGE_RETRIES = 3
 QUESTION = ".examPaper_box .examPaper_subject"
 ANCHOR = "> .subject_stem .subject_num [id^='anchor_']"
 STEM = "> .subject_stem .subject_describe"
@@ -21,6 +22,10 @@ CHOICES = ".subject_node .nodeLab:visible"
 OPTION_TEXT = ".node_detail"
 SELECTED_OPTION = f"input:checked, {OPTION_TEXT}.onChecked"
 MEDIA = "img:visible, canvas:visible, video:visible, audio:visible"
+
+
+class _QuestionChanged(AnswerError):
+    pass
 
 
 def is_exam_paper_url(url: str) -> bool:
@@ -74,14 +79,14 @@ async def _fill_current_question(page: Page, cdp: CDPSession, selector: str, api
         return 0, 1
 
     answers = await ask_deepseek(f"{kind}：{stem}", options, api_key)
-    if kind != "多选题" and len(answers) != 1:
-        raise AnswerError("单选题和判断题只允许填写一个选项")
     if (
         page.url != url or not await question.is_visible() or await selected_choices.count()
         or [text.strip() for text in await content.all_inner_texts()] != options
         or await _read_stem(cdp, f"{selector} {STEM}") != stem
     ):
-        raise AnswerError("等待 DeepSeek 期间题目或选择已变化")
+        raise _QuestionChanged
+    if kind != "多选题" and len(answers) != 1:
+        raise AnswerError("单选题和判断题只允许填写一个选项")
     if await has_visible_verification(page):
         raise AnswerError("检测到平台验证，请在浏览器手动处理")
     for index in answers:
@@ -109,15 +114,27 @@ async def fill_exam(page: Page, api_key: str) -> tuple[int, int]:
     next_button = controls.get_by_role("button", name="下一题", exact=True)
     save_button = controls.get_by_role("button", name="保存", exact=True)
     stash_button = page.get_by_role("button", name="暂存作业", exact=True)
-    filled = skipped = 0
+    filled = skipped = retries = 0
     cdp = await page.context.new_cdp_session(page)
     try:
         while page.url == url:
             if await has_visible_verification(page):
                 raise AnswerError("检测到平台验证，请在浏览器手动处理")
             anchor = await visible_anchor.get_attribute("id", timeout=10000)
+            if page.url != url:
+                break
             selector = f"{QUESTION}:has({ANCHOR}[id={json.dumps(anchor, ensure_ascii=False)}])"
-            result, needs_manual = await _fill_current_question(page, cdp, selector, api_key)
+            try:
+                result, needs_manual = await _fill_current_question(page, cdp, selector, api_key)
+            except _QuestionChanged:
+                if page.url != url:
+                    break
+                if retries == QUESTION_CHANGE_RETRIES:
+                    raise AnswerError("题目或选择持续变化，已达到自动重试上限") from None
+                retries += 1
+                logger.info(f"题目或选择已变化，正在重新读取当前题（{retries}/{QUESTION_CHANGE_RETRIES}）。", shift=True)
+                continue
+            retries = 0
             filled += result
             skipped += needs_manual
             if page.url != url or not await page.locator(f"{selector}:visible").is_visible():

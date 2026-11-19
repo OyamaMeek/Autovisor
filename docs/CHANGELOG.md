@@ -192,3 +192,20 @@
 - **Git 提交** `103f560b1964006011b160907956b5df5f057be0 fix(exam): wait for each homework window to close`，已推送 `origin/main`。
 
 ---
+
+## [2026-11-19 15:47] 题目变化后自动重新作答
+
+- **需求/问题描述**
+  > 作答期间检测到题目或选择变化时，自动重新作答。
+
+- **实际实现的功能与改动**
+  - 丢弃失效的答案，重新读取同一份试卷上的当前题，对未勾选题目重新请求 DeepSeek，保留已有选择。连续变化时最多重试三次。
+  - 真实 Chrome 和本地 HTTP 服务验证重试后保存新答案、保留手动勾选和重试上限。全量测试 135 项，132 项通过、3 项跳过。Python 语法、CLI 帮助和差异检查通过。未运行线上试卷。
+
+- **涉及文件**
+  - `modules/exam_answering.py`、`tests/test_answering_integration.py`、`README.md`
+  - `memory/plan.md`、`memory/progress.md`、`memory/verify.md`、`docs/CHANGELOG.md`
+
+- **Git 提交** 待提交。
+
+---

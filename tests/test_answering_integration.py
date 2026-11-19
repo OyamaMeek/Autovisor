@@ -555,8 +555,7 @@ class BrowserAnswerTests(_DeepSeekHTTPTestCase):
             self.assertTrue(await asyncio.to_thread(self.server.request_received.wait, 5))
             await self.page.locator(".nodeLab").first.click()
             self.server.reply_ready.set()
-            with self.assertRaisesRegex(AnswerError, "已变化"):
-                await asyncio.wait_for(task, timeout=5)
+            self.assertEqual(await asyncio.wait_for(task, timeout=5), (0, 0))
             self.assertEqual(await self.page.locator("input:checked").input_value(), "1")
             self.assertIsNone(await self.page.locator("body").get_attribute("data-saved0"))
         finally:
@@ -564,3 +563,48 @@ class BrowserAnswerTests(_DeepSeekHTTPTestCase):
                 task.cancel()
                 with contextlib.suppress(asyncio.CancelledError):
                     await task
+
+    async def test_exam_retries_with_new_options_after_change(self):
+        self.set_answers([2])
+        original_reply = self.server.reply
+        self.set_answers([1])
+        updated_reply = self.server.reply
+        self.server.reply = lambda request: (
+            updated_reply if json.loads(request["messages"][1]["content"])["options"] == ["2", "3", "4"]
+            else original_reply
+        )
+        self.server.reply_ready.clear()
+        await self.page.goto(await self._serve_exam("doexamination", "?kind=single"))
+        task = asyncio.create_task(fill_exam(self.page, "key-for-test"))
+        try:
+            self.assertTrue(await asyncio.to_thread(self.server.request_received.wait, 5))
+            await self.page.locator(".node_detail").evaluate_all("""options => {
+                [options[0].textContent, options[1].textContent] = [options[1].textContent, options[0].textContent];
+            }""")
+            self.server.reply_ready.set()
+            self.assertEqual(await asyncio.wait_for(task, timeout=5), (1, 0))
+            self.assertEqual(await self.page.locator("body").get_attribute("data-saved0"), "1")
+        finally:
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+
+    async def test_exam_stops_after_three_retries_if_options_keep_changing(self):
+        self.set_answers([2])
+        reply = self.server.reply
+        await self.page.goto(await self._serve_exam("doexamination", "?kind=single"))
+        option = self.page.locator(".node_detail").first
+        loop = asyncio.get_running_loop()
+        requests = []
+
+        def change_option(request):
+            requests.append(request)
+            asyncio.run_coroutine_threadsafe(
+                option.evaluate("(el, value) => el.textContent = value", str(len(requests) + 4)), loop
+            ).result(timeout=5)
+            return reply
+
+        self.server.reply = change_option
+        with self.assertRaises(AnswerError):
+            await asyncio.wait_for(fill_exam(self.page, "key-for-test"), timeout=10)
+        self.assertEqual(len(requests), 4)
+        self.assertEqual(await self.page.locator("input:checked").count(), 0)

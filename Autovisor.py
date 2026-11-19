@@ -244,9 +244,12 @@ async def run_exam_mode(config) -> None:
         try:
             if not session.attached:
                 await ensure_login(session.context, session.page, cookies, config)
-            await session.page.goto(
-                "https://onlineweb.zhihuishu.com/onlinestuh5", wait_until="domcontentloaded", timeout=30000
-            )
+            campus_url = "https://onlineweb.zhihuishu.com/onlinestuh5"
+            try:
+                await session.page.goto(campus_url, wait_until="commit", timeout=30000)
+            except TimeoutError as exc:
+                logger.warn(f"在线学堂打开超时，请在当前标签页手动打开 {campus_url}", shift=True)
+                logger.debug(logger.summarize_exception(exc))
             logger.info("请在在线学堂进入作业考试并手动打开试卷。答题后请核对并自行交卷。", shift=True)
             await watch_exam_pages(session.page, config.deepseek_api_key)
         finally:

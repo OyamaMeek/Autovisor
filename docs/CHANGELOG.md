@@ -92,3 +92,19 @@
 - **Git 提交** `a0032c39cc5fbd53ee79ad52bcb3e5267aebfc4d fix(config): update course playback defaults`，已推送 `origin/main`。
 
 ---
+
+## [2026-11-19 13:37] 修复作业考试启动超时
+
+- **需求/问题描述**
+  > Cookies 登录成功后，打开在线学堂超时，程序退出并关闭浏览器。配置中的空白网址也会产生警告。
+
+- **实际实现的功能与改动**
+  - 在线学堂导航提交后开始监听试卷。导航超时时保留浏览器，提示在原标签页手动打开在线学堂。空白课程网址直接跳过，保留非空无效网址提示。
+  - 真实 Chrome 复现旧版超时，并通过延迟加载和超时后手动打开试卷的回归测试。全量测试 123 项，120 项通过、3 项跳过。Python 编译、CLI 帮助、启动脚本语法、锁文件和差异检查通过。未使用真实账号或线上试卷。
+
+- **涉及文件**
+  - `Autovisor.py`、`modules/configs.py`、`tests/test_answering_integration.py`、`tests/test_configs.py`、`memory/`、`docs/CHANGELOG.md`
+
+- **Git 提交** 待提交。
+
+---

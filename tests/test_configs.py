@@ -1,4 +1,6 @@
 import configparser
+from contextlib import redirect_stdout
+from io import StringIO
 import os
 import tempfile
 import unittest
@@ -9,6 +11,22 @@ from modules.configs import Config, ConfigError
 
 
 class ConfigTests(unittest.TestCase):
+    def test_ignores_empty_course_urls_and_reports_invalid_entries(self):
+        root = Path(__file__).resolve().parents[1]
+        ini = configparser.ConfigParser()
+        ini.read(root / "config.ini.example", encoding="utf-8")
+        valid_url = "https://studyvideoh5.zhihuishu.com/"
+        ini["course-url"] = {"URL1": " ", "URL2": "invalid", "URL3": valid_url}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.ini"
+            with path.open("w", encoding="utf-8") as file:
+                ini.write(file)
+            with redirect_stdout(StringIO()) as output:
+                config = Config(path, root / "data" / "mirrors.json")
+        self.assertEqual(config.course_urls, [valid_url])
+        self.assertIn('"invalid"', output.getvalue())
+        self.assertNotIn('""', output.getvalue())
+
     def test_course_options_in_templates(self):
         root = Path(__file__).resolve().parents[1]
         for name in ("config.ini.example", "config.macos.ini.example"):

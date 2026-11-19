@@ -6,13 +6,17 @@ import threading
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from playwright.async_api import async_playwright
 
+from Autovisor import run_exam_mode
 from modules.answering import AnswerError, answer_question
-from modules.exam_answering import fill_exam, watch_exam_pages
+from modules.browser import BrowserSession
+from modules.exam_answering import fill_exam
 from modules.fusion_adapter import FusionAdapter
+from modules.logger import Logger
 from modules.tasks import skip_questions
 
 
@@ -199,6 +203,18 @@ class BrowserAnswerTests(unittest.IsolatedAsyncioTestCase):
         params = "recruit/work/exam/course/school" + ("/0" if route == "dohomework" else "")
         return f"{base_url}{query}#/webExamList/{route}/{params}"
 
+    def _start_exam_mode(self):
+        session = BrowserSession(self.browser, self.page.context, self.page, attached=True)
+        config = SimpleNamespace(attach_existing_chrome=True, deepseek_api_key="key-for-test")
+
+        async def run():
+            with patch("Autovisor.create_browser_session", return_value=session), patch(
+                "Autovisor.logger", Logger(), create=True
+            ):
+                await run_exam_mode(config)
+
+        return asyncio.create_task(run())
+
     async def test_exam_waits_for_manually_opened_paper_and_saves_without_submitting(self):
         url = await self._serve_exam()
         statements = []
@@ -210,13 +226,27 @@ class BrowserAnswerTests(unittest.IsolatedAsyncioTestCase):
             return {"choices": [{"finish_reason": "stop", "message": {"content": json.dumps({"answers": answers})}}]}
 
         self.server.reply = reply
-        await self.page.set_content(f'<button onclick="window.open(\'{url}\')">开始答题</button>')
-        task = asyncio.create_task(watch_exam_pages(self.page, "key-for-test"))
+        campus_url = "https://onlineweb.zhihuishu.com/onlinestuh5"
+        script_release = asyncio.Event()
+
+        async def hold_script(route):
+            await script_release.wait()
+            await route.fulfill(body="")
+
+        await self.page.route(campus_url + "/slow.js", hold_script)
+        await self.page.route(campus_url, lambda route: route.fulfill(
+            content_type="text/html; charset=utf-8",
+            body=f'<button onclick="window.open(\'{url}\')">开始答题</button>'
+                 f'<script src="{campus_url}/slow.js"></script>',
+        ))
+        task = self._start_exam_mode()
         try:
-            await asyncio.sleep(0.2)
+            start_button = self.page.get_by_role("button", name="开始答题")
+            await start_button.wait_for(timeout=5000)
+            self.assertEqual(await self.page.evaluate("document.readyState"), "loading")
             self.assertFalse(self.server.request_received.is_set())
             async with self.page.expect_popup(timeout=5000) as popup:
-                await self.page.get_by_role("button", name="开始答题").click()
+                await start_button.click()
             paper = await popup.value
             await paper.get_by_text("保存成功！", exact=True).wait_for(timeout=12000)
             body = paper.locator("body")
@@ -229,20 +259,39 @@ class BrowserAnswerTests(unittest.IsolatedAsyncioTestCase):
             self.assertIn("选择所有质数", statements[0])
             self.assertIn("九是质数", statements[1])
         finally:
+            script_release.set()
+            await self.page.unroute_all(behavior="wait")
             task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await task
 
-    async def test_exam_mode_tracks_exam_opened_in_same_tab(self):
+    async def test_exam_mode_tracks_paper_in_same_tab_after_campus_timeout(self):
         self.set_answers([2])
         url = await self._serve_exam("doexamination", "?kind=single")
-        task = asyncio.create_task(watch_exam_pages(self.page, "key-for-test"))
+        request_started = asyncio.Event()
+        request_release = asyncio.Event()
+
+        async def hold_campus(route):
+            request_started.set()
+            await request_release.wait()
+            await route.abort()
+
+        await self.page.route("https://onlineweb.zhihuishu.com/onlinestuh5", hold_campus)
+        task = self._start_exam_mode()
         try:
+            await asyncio.wait_for(request_started.wait(), timeout=5)
+            done, _ = await asyncio.wait({task}, timeout=31)
+            if done:
+                await task
+                self.fail("在线学堂导航超时后停止了试卷监听")
             await self.page.goto(url)
             await self.page.get_by_text("保存成功！", exact=True).wait_for(timeout=10000)
             self.assertEqual(await self.page.locator("body").get_attribute("data-saved0"), "2")
             self.assertIsNone(await self.page.locator("body").get_attribute("data-submitted"))
         finally:
+            if not self.page.is_closed():
+                await self.page.unroute_all(behavior="ignoreErrors")
+            request_release.set()
             task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await task

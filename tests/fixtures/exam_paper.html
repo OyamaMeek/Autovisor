@@ -17,7 +17,8 @@
     <span id="notice" hidden>保存成功！</span>
 </div>
 <script>
-    const kind = new URLSearchParams(location.search).get('kind');
+    const params = new URLSearchParams(location.search);
+    const kind = params.get('kind');
     const questions = kind === 'single' ? [
         ['单选题', '1 + 1 等于几？', ['3', '2', '4']],
     ] : [
@@ -45,8 +46,18 @@
                 type="${type === '多选题' ? 'checkbox' : 'radio'}">
                 <img class="flagChecked" alt="选项图标"><div class="node_detail">${option}</div>`;
             const input = row.querySelector('input');
-            input.checked = kind !== 'single' && index === 0 && number === 0;
-            row.onclick = () => input.checked = input.type === 'radio' || !input.checked;
+            const selected = kind !== 'single' && index === 0 && number === 0;
+            if (params.has('highlight') && input.type === 'radio') {
+                const text = row.querySelector('.node_detail');
+                text.classList.toggle('onChecked', selected);
+                row.onclick = () => {
+                    rows.querySelector('.onChecked')?.classList.remove('onChecked');
+                    text.classList.add('onChecked');
+                };
+            } else {
+                input.checked = selected;
+                row.onclick = () => input.checked = input.type === 'radio' || !input.checked;
+            }
             rows.append(row);
         }
         document.getElementById('questions').append(question);
@@ -60,7 +71,9 @@
     next.hidden = pages.length === 1;
     save.hidden = !next.hidden;
     function recordAnswer() {
-        const selected = [...pages[current].querySelectorAll('input:checked')].map(input => input.value);
+        const selected = [...pages[current].querySelectorAll('.nodeLab')]
+            .filter(row => row.querySelector('input:checked') || row.querySelector('.onChecked'))
+            .map(row => row.querySelector('input').value);
         document.body.dataset[`saved${current}`] = selected.join(',');
         const answered = [...pages].filter((_, index) => document.body.dataset[`saved${index}`]).length;
         document.getElementById('completion').textContent = Math.floor(100 * answered / pages.length);
@@ -85,7 +98,7 @@
                 stashed: document.body.dataset.stashed,
                 submitted: document.body.dataset.submitted,
             }, '*');
-            window.close();
+            if (!params.has('keepOpen')) window.close();
         }
     }
 </script>

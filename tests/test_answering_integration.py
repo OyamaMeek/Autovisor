@@ -11,7 +11,7 @@ from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from playwright.async_api import TimeoutError, async_playwright
+from playwright.async_api import async_playwright
 
 from Autovisor import run_exam_mode
 from modules.answering import AnswerError, answer_question, ask_deepseek
@@ -263,8 +263,8 @@ class BrowserAnswerTests(_DeepSeekHTTPTestCase):
 
     async def test_unsubmitted_homework_opens_once_in_order_after_list_refresh(self):
         self.set_answers([2])
-        first = await self._serve_exam(query="?kind=single&reload=1")
-        second = first.replace("/work/", "/work-two/").replace("&reload=1", "")
+        first = await self._serve_exam(query="?kind=single&keepOpen")
+        second = first.replace("/work/", "/work-two/").replace("&keepOpen", "")
         first_loads = []
 
         async def serve_first_homework(route):
@@ -311,7 +311,7 @@ class BrowserAnswerTests(_DeepSeekHTTPTestCase):
                     function openWork(index) {{
                         opened.push([index, stashed.length]);
                         const paper = window.open();
-                        setTimeout(() => {{ paper.location.href = urls[index - 1]; }}, 200);
+                        setTimeout(() => {{ paper.location.href = urls[index - 1]; }}, index === 1 ? 1800 : 200);
                     }}
                 </script>
             ''',
@@ -324,11 +324,15 @@ class BrowserAnswerTests(_DeepSeekHTTPTestCase):
         try:
             await asyncio.sleep(0.6)
             self.assertEqual(await self.page.evaluate("opened"), [])
-            await self.page.locator("#examStateTabWsj").evaluate("tab => tab.classList.add('cur')")
-            try:
-                await self.page.wait_for_function("opened.length >= 2", timeout=7000)
-            except TimeoutError:
-                self.fail("脚本没有逐份打开未提交的作业")
+            async with self.page.expect_popup(timeout=5000) as popup:
+                await self.page.locator("#examStateTabWsj").evaluate("tab => tab.classList.add('cur')")
+            paper = await popup.value
+            await asyncio.sleep(1.6)
+            self.assertEqual(await self.page.evaluate("opened"), [[1, 0]])
+            await self.page.wait_for_function("stashed.length === 1", timeout=7000)
+            await asyncio.sleep(1)
+            self.assertEqual(await self.page.evaluate("opened"), [[1, 0]])
+            await paper.close()
             await self.page.wait_for_function("stashed.length === 2", timeout=7000)
             self.assertEqual(await self.page.evaluate("stashed"), [
                 {"paper": "#/webExamList/dohomework/recruit/work/exam/course/school/0", "stashed": "2", "submitted": None},
@@ -411,7 +415,7 @@ class BrowserAnswerTests(_DeepSeekHTTPTestCase):
                 await task
 
     async def test_exam_waits_for_manually_opened_paper_and_saves_without_submitting(self):
-        url = await self._serve_exam()
+        url = await self._serve_exam(query="?highlight")
         statements = []
 
         def reply(request):
@@ -462,7 +466,7 @@ class BrowserAnswerTests(_DeepSeekHTTPTestCase):
 
     async def test_completed_homework_confirms_stash_after_saving_last_answer(self):
         self.set_answers([2])
-        url = await self._serve_exam(query="?kind=single")
+        url = await self._serve_exam(query="?kind=single&highlight")
         await self.page.goto(url)
 
         self.assertEqual(await fill_exam(self.page, "key-for-test"), (1, 0))

@@ -173,3 +173,22 @@
 - **Git 提交** `c206f8711d75a32ddd19035e0e6442bf684cf13d fix(exam): reload when the first question fails to load`，已推送 `origin/main`。
 
 ---
+
+## [2026-11-19 15:06] 修复作业选项识别与窗口顺序
+
+- **需求/问题描述**
+  > 修复作业打开和答题阶段的警告，每次只打开一份作业。
+
+- **实际实现的功能与改动**
+  - 识别页面高亮和输入框勾选两种已选状态，保留用户选择并确认自动选择后继续保存。
+  - 当前作业窗口未关闭时暂停打开下一份。空白窗口超时后仍继续监听，并区分未打开窗口和未进入答题页的提示。
+  - 真实 Chrome 专项回归 3 项全部通过。启用 Chrome 的全量测试 133 项，130 项通过、3 项跳过。Python 编译、CLI 帮助和差异检查通过。未运行线上试卷。
+
+- **涉及文件**
+  - `modules/exam_answering.py`、`Autovisor.py`、`README.md`
+  - `tests/fixtures/exam_paper.html`、`tests/test_answering_integration.py`
+  - `memory/`、`docs/CHANGELOG.md`
+
+- **Git 提交** 待提交。
+
+---

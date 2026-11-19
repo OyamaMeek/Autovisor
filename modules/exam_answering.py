@@ -19,7 +19,7 @@ STEM = "> .subject_stem .subject_describe"
 KIND = "> .subject_stem .subject_type > span:first-child"
 CHOICES = ".subject_node .nodeLab:visible"
 OPTION_TEXT = ".node_detail"
-CHECKED = ".subject_node input:checked"
+SELECTED_OPTION = f"input:checked, {OPTION_TEXT}.onChecked"
 MEDIA = "img:visible, canvas:visible, video:visible, audio:visible"
 
 
@@ -54,12 +54,13 @@ async def _read_stem(cdp: CDPSession, selector: str) -> str:
 async def _fill_current_question(page: Page, cdp: CDPSession, selector: str, api_key: str) -> tuple[int, int]:
     url = page.url
     question = page.locator(f"{selector}:visible")
-    if await question.locator(CHECKED).count():
+    choices = question.locator(CHOICES)
+    selected_choices = choices.filter(has=page.locator(SELECTED_OPTION))
+    if await selected_choices.count():
         return 0, 0
     kind = (await question.locator(KIND).inner_text(timeout=2500)).strip("【】 \r\n")
     if kind not in {"单选题", "多选题", "判断题"}:
         return 0, 1
-    choices = question.locator(CHOICES)
     content = choices.locator(OPTION_TEXT)
     options = [text.strip() for text in await content.all_inner_texts()]
     stem = await _read_stem(cdp, f"{selector} {STEM}")
@@ -76,7 +77,7 @@ async def _fill_current_question(page: Page, cdp: CDPSession, selector: str, api
     if kind != "多选题" and len(answers) != 1:
         raise AnswerError("单选题和判断题只允许填写一个选项")
     if (
-        page.url != url or not await question.is_visible() or await question.locator(CHECKED).count()
+        page.url != url or not await question.is_visible() or await selected_choices.count()
         or [text.strip() for text in await content.all_inner_texts()] != options
         or await _read_stem(cdp, f"{selector} {STEM}") != stem
     ):
@@ -86,9 +87,10 @@ async def _fill_current_question(page: Page, cdp: CDPSession, selector: str, api
     for index in answers:
         choice = choices.nth(index)
         await choice.click(timeout=2500)
-        await choice.locator("input:checked").wait_for(state="attached", timeout=2500)
+        await choice.locator(SELECTED_OPTION).first.wait_for(state="attached", timeout=2500)
     selected = await choices.evaluate_all(
-        "rows => rows.flatMap((row, index) => row.querySelector('input:checked') ? [index] : [])"
+        "(rows, selector) => rows.flatMap((row, index) => row.querySelector(selector) ? [index] : [])",
+        SELECTED_OPTION,
     )
     if selected != sorted(answers):
         raise AnswerError("页面选中状态与返回的答案不一致")
@@ -146,19 +148,19 @@ async def fill_exam(page: Page, api_key: str) -> tuple[int, int]:
             await cdp.detach()
 
 
-async def _open_next_homework(page: Page, attempted: set[tuple[str, tuple[str, ...], int]]) -> bool:
+async def _open_next_homework(page: Page, attempted: set[tuple[str, tuple[str, ...], int]]) -> Page | None:
     url = page.url
     parsed = urlsplit(url)
     if (
         parsed.scheme != "https" or parsed.netloc != "onlineexamh5new.zhihuishu.com"
         or parsed.path != "/stuExamWeb.html" or parsed.fragment.split("?", 1)[0] != "/webExamList"
     ):
-        return False
+        return None
 
     unsubmitted = page.locator("#examStateTabWsj.cur:visible")
     dialogs = page.locator(".el-message-box__wrapper:visible, .el-dialog__wrapper:visible")
     if not await unsubmitted.is_visible() or await dialogs.count() or await has_visible_verification(page):
-        return False
+        return None
 
     cards = page.locator(".examItemWrap:visible").filter(has=page.locator('.percentage_number:text-is("作业")'))
     occurrences = Counter()
@@ -175,18 +177,22 @@ async def _open_next_homework(page: Page, attempted: set[tuple[str, tuple[str, .
         if not await button.is_visible():
             continue
         if page.url != url or not await unsubmitted.is_visible():
-            return False
+            return None
         attempted.add(key)
+        paper = None
         try:
             async with page.expect_popup(timeout=5000) as result:
                 await button.click(timeout=2500)
             paper = await result.value
-            await paper.wait_for_url(lambda value: value not in {"", "about:blank"}, wait_until="commit", timeout=15000)
+            await paper.wait_for_url(is_exam_paper_url, wait_until="commit", timeout=PAPER_LOAD_TIMEOUT_MS)
         except PlaywrightError as exc:
-            logger.warn(f"作业「{identity[0]}」打开或加载失败，请在浏览器检查。", shift=True)
+            if paper is None:
+                logger.warn(f"作业「{identity[0]}」未打开答题窗口，请在浏览器检查作业列表。", shift=True)
+            elif not paper.is_closed():
+                logger.warn(f"作业「{identity[0]}」未能及时进入答题页，关闭当前窗口后才会打开下一份。", shift=True)
             logger.debug(logger.summarize_exception(exc))
-        return True
-    return False
+        return paper
+    return None
 
 
 async def watch_exam_pages(entry_page: Page, api_key: str) -> None:
@@ -194,6 +200,7 @@ async def watch_exam_pages(entry_page: Page, api_key: str) -> None:
     handled = {}
     reloaded = {}
     attempted = set()
+    active_homework = None
 
     def track(page: Page) -> None:
         pages.add(page)
@@ -245,14 +252,18 @@ async def watch_exam_pages(entry_page: Page, api_key: str) -> None:
                 if not page.is_closed():
                     logger.warn("题目加载或保存失败，请在浏览器检查当前试卷。", shift=True)
                     logger.debug(logger.summarize_exception(exc))
-        for page in tuple(pages):
-            if page.is_closed():
-                continue
-            try:
-                if await _open_next_homework(page, attempted):
-                    break
-            except PlaywrightError as exc:
-                if not page.is_closed():
-                    logger.debug_throttled("homework-list", logger.summarize_exception(exc))
+        if (active_homework is None or active_homework.is_closed()) and not any(
+            not page.is_closed() and is_exam_paper_url(page.url) for page in pages
+        ):
+            for page in tuple(pages):
+                if page.is_closed():
+                    continue
+                try:
+                    active_homework = await _open_next_homework(page, attempted)
+                    if active_homework is not None:
+                        break
+                except PlaywrightError as exc:
+                    if not page.is_closed():
+                        logger.debug_throttled("homework-list", logger.summarize_exception(exc))
         if pages:
             await asyncio.sleep(0.5)

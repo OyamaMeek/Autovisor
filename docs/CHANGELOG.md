@@ -235,11 +235,13 @@
   > Windows 发行包在重定向 `Autovisor.exe --help` 输出时，CP1252 无法编码中文，工作流终止发布。
 
 - **实际实现的功能与改动**
-  - 在 PyInstaller 内嵌的解释器启用 UTF-8。以 `3.19.1` 标签重新发布。
+  - 在 PyInstaller 内嵌的解释器启用 UTF-8。`3.19.1` 已发布至 `OyamaMeek/Autovisor`。
+  - Windows Actions 运行 `44485741541` 成功，135 项测试中 131 项通过、4 项跳过，解压后的 `Autovisor.exe --help` 可输出中文。macOS Apple Silicon 和 Intel 冒烟测试通过。
+  - 从公开下载地址取回 ZIP，SHA-256 与 GitHub 一致，压缩包完整，主程序为 Windows x86-64。更新接口返回 `3.19.1`。
 
 - **涉及文件**
   - `build.py`、`modules/version.py`、`README.md`、`memory/`、`docs/CHANGELOG.md`
 
-- **Git 提交** 待提交。
+- **Git 提交** `f77b0eb80223208652db8987ad35b5b10fec507b fix(release): enable UTF-8 in the packaged runtime`，已推送 `origin/main`。
 
 ---

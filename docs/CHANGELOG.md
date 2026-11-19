@@ -121,6 +121,6 @@
 - **涉及文件**
   - `modules/exam_answering.py`、`Autovisor.py`、`README.md`、`tests/test_answering_integration.py`、`tests/fixtures/exam_paper.html`、`memory/`、`docs/CHANGELOG.md`
 
-- **Git 提交** 待提交。
+- **Git 提交** `a9541f8aab0a768f301edb53f7d4a7a705f7bc2a feat(exam): stash completed homework`，已推送 `origin/main`。
 
 ---

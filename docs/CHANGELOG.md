@@ -124,3 +124,19 @@
 - **Git 提交** `a9541f8aab0a768f301edb53f7d4a7a705f7bc2a feat(exam): stash completed homework`，已推送 `origin/main`。
 
 ---
+
+## [2026-11-19 14:25] 逐份打开未提交的作业
+
+- **需求/问题描述**
+  > 将自动逐份打开作业写进脚本。
+
+- **实际实现的功能与改动**
+  - 在 `--answer-exam` 模式中选择课程并进入「未提交」列表后，脚本按顺序点击可答作业的「开始答题」，等待答题标签页跳转，并复用现有作答与暂存流程。通过列表网址和卡片信息避免重复打开。考试试卷由用户手动打开，交卷由用户操作。
+  - 本地 Chrome 回归验证多份作业依次打开、列表重建后去重、暂存关闭标签页以及交卷边界。全量测试 128 项，125 项通过、3 项跳过。最终版本的作业列表回归、Python 编译、CLI 帮助和差异检查通过。未运行线上作业。
+
+- **涉及文件**
+  - `modules/exam_answering.py`、`Autovisor.py`、`README.md`、`tests/test_answering_integration.py`、`tests/fixtures/exam_paper.html`、`memory/`、`docs/CHANGELOG.md`
+
+- **Git 提交** 待提交。
+
+---

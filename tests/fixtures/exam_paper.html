@@ -79,6 +79,13 @@
     function confirmStash() {
         document.getElementById('stash-dialog').close();
         document.body.dataset.stashed = document.body.dataset[`saved${current}`];
-        if (window.opener) window.close();
+        if (window.opener) {
+            window.opener.postMessage({
+                paper: location.hash,
+                stashed: document.body.dataset.stashed,
+                submitted: document.body.dataset.submitted,
+            }, '*');
+            window.close();
+        }
     }
 </script>

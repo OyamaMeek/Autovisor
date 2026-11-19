@@ -1,5 +1,6 @@
 import asyncio
 import json
+from collections import Counter
 from unicodedata import category
 from urllib.parse import urlsplit
 
@@ -143,9 +144,55 @@ async def fill_exam(page: Page, api_key: str) -> tuple[int, int]:
             await cdp.detach()
 
 
+async def _open_next_homework(page: Page, attempted: set[tuple[str, tuple[str, ...], int]]) -> bool:
+    url = page.url
+    parsed = urlsplit(url)
+    if (
+        parsed.scheme != "https" or parsed.netloc != "onlineexamh5new.zhihuishu.com"
+        or parsed.path != "/stuExamWeb.html" or parsed.fragment.split("?", 1)[0] != "/webExamList"
+    ):
+        return False
+
+    unsubmitted = page.locator("#examStateTabWsj.cur:visible")
+    dialogs = page.locator(".el-message-box__wrapper:visible, .el-dialog__wrapper:visible")
+    if not await unsubmitted.is_visible() or await dialogs.count() or await has_visible_verification(page):
+        return False
+
+    cards = page.locator(".examItemWrap:visible").filter(has=page.locator('.percentage_number:text-is("作业")'))
+    occurrences = Counter()
+    for card in await cards.all():
+        details = await card.locator(".examTit .name, .examInfoList").all_text_contents()
+        identity = tuple(" ".join(text.split()) for text in details)
+        if not identity or not identity[0]:
+            continue
+        occurrences[identity] += 1
+        key = (url, identity, occurrences[identity])
+        if key in attempted:
+            continue
+        button = card.locator('a[title="开始答题"] .themeBg:visible')
+        if not await button.is_visible():
+            continue
+        if page.url != url or not await unsubmitted.is_visible():
+            return False
+        attempted.add(key)
+        try:
+            async with page.expect_popup(timeout=5000) as result:
+                await button.click(timeout=2500)
+            paper = await result.value
+            await paper.wait_for_url(lambda value: value not in {"", "about:blank"}, wait_until="commit", timeout=15000)
+            if is_exam_paper_url(paper.url):
+                await paper.locator(f"{QUESTION}:visible").first.wait_for(timeout=15000)
+        except PlaywrightError as exc:
+            logger.warn(f"作业「{identity[0]}」打开或加载失败，请在浏览器检查。", shift=True)
+            logger.debug(logger.summarize_exception(exc))
+        return True
+    return False
+
+
 async def watch_exam_pages(entry_page: Page, api_key: str) -> None:
     pages = set()
     handled = {}
+    attempted = set()
 
     def track(page: Page) -> None:
         pages.add(page)
@@ -176,5 +223,14 @@ async def watch_exam_pages(entry_page: Page, api_key: str) -> None:
                 if not page.is_closed():
                     logger.warn("题目加载或保存失败，请在浏览器检查当前试卷。", shift=True)
                     logger.debug(logger.summarize_exception(exc))
+        for page in tuple(pages):
+            if page.is_closed():
+                continue
+            try:
+                if await _open_next_homework(page, attempted):
+                    break
+            except PlaywrightError as exc:
+                if not page.is_closed():
+                    logger.debug_throttled("homework-list", logger.summarize_exception(exc))
         if pages:
             await asyncio.sleep(0.5)

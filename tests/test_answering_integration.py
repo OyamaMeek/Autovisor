@@ -9,12 +9,12 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from playwright.async_api import async_playwright
+from playwright.async_api import TimeoutError, async_playwright
 
 from Autovisor import run_exam_mode
 from modules.answering import AnswerError, answer_question
 from modules.browser import BrowserSession
-from modules.exam_answering import fill_exam
+from modules.exam_answering import fill_exam, watch_exam_pages
 from modules.fusion_adapter import FusionAdapter
 from modules.logger import Logger
 from modules.tasks import skip_questions
@@ -214,6 +214,73 @@ class BrowserAnswerTests(unittest.IsolatedAsyncioTestCase):
                 await run_exam_mode(config)
 
         return asyncio.create_task(run())
+
+    async def test_unsubmitted_homework_opens_once_in_order_after_list_refresh(self):
+        self.set_answers([2])
+        first = await self._serve_exam(query="?kind=single")
+        second = first.replace("/work/", "/work-two/")
+        list_url = "https://onlineexamh5new.zhihuishu.com/stuExamWeb.html#/webExamList?recruitId=recruit"
+        await self.page.route("**/stuExamWeb.html", lambda route: route.fulfill(
+            content_type="text/html; charset=utf-8",
+            body=f'''
+                <li id="examStateTabWsj">未提交</li>
+                <ul id="work">
+                    <li><div class="examItemWrap">
+                        <span class="percentage_number">作业</span>
+                        <div class="examTit"><span class="name">单元测试</span></div>
+                        <ul class="examInfoList"><li>对应章节 第二章</li></ul>
+                        <a title="开始答题"><span class="themeBg" onclick="openWork(1)">开始答题</span></a>
+                    </div></li>
+                    <li><div class="examItemWrap">
+                        <span class="percentage_number">作业</span>
+                        <div class="examTit"><span class="name">单元测试</span></div>
+                        <ul class="examInfoList"><li>对应章节 第三章</li></ul>
+                        <a title="开始答题"><span class="themeBg" onclick="openWork(2)">开始答题</span></a>
+                    </div></li>
+                    <li><div class="examItemWrap">
+                        <span class="percentage_number">考试</span>
+                        <a title="开始答题"><span class="themeBg" onclick="opened.push('exam')">开始答题</span></a>
+                    </div></li>
+                </ul>
+                <script>
+                    const urls = {json.dumps([first, second])};
+                    const opened = [];
+                    const stashed = [];
+                    addEventListener('message', event => {{
+                        if (event.origin === location.origin && event.data.stashed) {{
+                            stashed.push(event.data);
+                            work.innerHTML = work.innerHTML;
+                        }}
+                    }});
+                    function openWork(index) {{
+                        opened.push([index, stashed.length]);
+                        const paper = window.open();
+                        setTimeout(() => {{ paper.location.href = urls[index - 1]; }}, 200);
+                    }}
+                </script>
+            ''',
+        ))
+        await self.page.goto(list_url)
+        task = asyncio.create_task(watch_exam_pages(self.page, "key-for-test"))
+        try:
+            await asyncio.sleep(0.6)
+            self.assertEqual(await self.page.evaluate("opened"), [])
+            await self.page.locator("#examStateTabWsj").evaluate("tab => tab.classList.add('cur')")
+            try:
+                await self.page.wait_for_function("opened.length >= 2", timeout=7000)
+            except TimeoutError:
+                self.fail("脚本没有逐份打开未提交的作业")
+            await self.page.wait_for_function("stashed.length === 2", timeout=7000)
+            self.assertEqual(await self.page.evaluate("stashed"), [
+                {"paper": "#/webExamList/dohomework/recruit/work/exam/course/school/0", "stashed": "2", "submitted": None},
+                {"paper": "#/webExamList/dohomework/recruit/work-two/exam/course/school/0", "stashed": "2", "submitted": None},
+            ])
+            await asyncio.sleep(0.6)
+            self.assertEqual(await self.page.evaluate("opened"), [[1, 0], [2, 1]])
+        finally:
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
 
     async def test_exam_waits_for_manually_opened_paper_and_saves_without_submitting(self):
         url = await self._serve_exam()

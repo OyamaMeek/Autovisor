@@ -1,48 +1,26 @@
-##  Autovisor
+# Autovisor
 
-由 **OyamaMeek** 维护。 [GitHub 项目主页](https://github.com/OyamaMeek/Autovisor)
+Autovisor 使用 Playwright 操作智慧树网页，支持智慧共享课、翻转课和融合共享课的自动播放、续播与课时切换。由 **OyamaMeek** 维护。
 
-------
-#### 2026/9/24 Autovisor-3.18.4 更新
+[下载 Windows x64 发行包](https://github.com/OyamaMeek/Autovisor/releases/latest) · [macOS 源码运行](#三macos-源码运行)
 
-**本次更新:**
+## 3.19 系列新增功能
 
-- 新增融合共享课支持: 自动跳过 AI 随堂练习弹窗、展开折叠目录、关闭弹窗后恢复播放, 并读取课时真实学习进度.
+- **智慧树学号登录**。填写学号、密码和学校全称即可登录，也支持手机号登录和浏览器手动登录。 [配置学号登录](#学号登录)
+- **DeepSeek 课中答题**。填入自己的 API Key，可处理普通课中题和融合共享课练习中的文本单选、多选和判断题。融合练习完成后会提交并续播。 [配置 DeepSeek](#deepseek-api-自动答题)
+- **独立的作业考试模式**。通过 `--answer-exam` 启动，按顺序打开未提交作业，保留已有选项并逐题保存文本客观题。答完的作业会自动暂存，考试由用户手动打开。核对答案后自行交卷。 [启动作业考试模式](#作业考试答题模式)
+- **本地答案记录**。校验通过的 DeepSeek 答案会连同题目和选项追加到运行目录的 `.autovisor/deepseek-answers.md`，便于查阅。
+- **课程播放默认设置**。新配置默认以 1.5 倍速静音播放，单门课程不限时，已有配置中的显式设置优先。
 
-**近期更新:**
+当前发行版 **3.19.2** 包含 3.19 系列功能及维护者信息更新。Windows x64 发行包由 GitHub Actions 构建并验证。
 
-- 修复课程页卡死: 已读的"学前必读"弹窗是隐藏节点, 等它可见会一直等下去, 现在超时即跳过.
-- 课时切换、目录识别的等待也加上超时, 异常页面不再长时间卡住.
-- 支持 Python 3.13.
+## 一、其他功能
 
-------
-#### 一、程序介绍
+- 自动处理播放弹窗并实时更新学习进度。
+- 支持习惯分、可选的登录滑块验证，以及 Windows 隐藏浏览器窗口运行。
+- 启动时检查更新，支持按日夜调整背景色，完成章节时显示运行时长。
 
-**项目简介:**
-
-这是一个可无人监督的自动化程序, 基于微软的 Playwright 框架, 由 Python 和 JavaScript 编写而成. 核心原理是使用浏览器模拟用户操作.
-
-**程序功能:**
-
-- **支持自动登录**
-- **自动通过登录滑块验证(可选)**
-- **自动播放和切换下一集**
-- **自动跳过弹窗和弹题**
-- **通过 DeepSeek API 作答普通课中题目与融合课随堂练习**
-- **通过独立模式填写作业、见面课测验与考试中的文本客观题**
-- **自动静音、设置指定倍速**
-- **自动检测暂停并自动续播**
-- **支持智慧共享课、翻转课、融合共享课**
-- **支持刷习惯分**
-- **支持隐藏窗口后台刷课**
-- 启动时自动检查更新
-- 后台实时更新学习进度
-- macOS 支持源码运行
-- 根据当前时间自动设置背景色(白天/夜晚)
-- 完成章节时提示已刷课时长
-- 各种自定义配置
-
-#### 二、发行版运行
+## 二、Windows 发行版运行
 
 1. 请确保系统为 Windows 10 及以上.
 
@@ -74,7 +52,7 @@
 - `packages/`: 自动下载的 NumPy、OpenCV 等运行时依赖.
 - `data/`: 登录 Cookies 和镜像源配置.
 
-#### 三、macOS 源码运行
+## 三、macOS 源码运行
 
 需要 macOS 11 (Big Sur) 及以上 (Apple Silicon / Intel 均可) 和系统 Chrome浏览器. 先复制模板并填写配置:
 
@@ -90,13 +68,15 @@ cp config.macos.ini.example config.macos.ini
 
 首次运行会自动部署环境 (安装 `uv`、依赖和必要的浏览器), 之后直接启动. 环境或配置变化时会自动重新部署, 也可用 `./run_macos.sh --setup` 强制重建.
 
-##### 学号登录
+## 登录与答题配置
+
+### 学号登录
 
 在 `config.ini`（macOS 使用 `config.macos.ini`）的 `[user-account]` 中，将 `username` 填为学号，并填写 `password` 和 `school`。`school` 填智慧树登录页下拉列表中显示的学校全称。使用图形配置工具时，填写 **手机号或学号**、**密码** 和 **学校全称**。
 
 `school` 留空时，`username` 填手机号。账号或密码留空时，在浏览器中手动登录。
 
-##### DeepSeek API 自动答题
+### DeepSeek API 自动答题
 
 在 DeepSeek 开放平台创建自己的 API Key。打开 `config.ini`（macOS 使用 `config.macos.ini`），将 Key 填入 `[deepseek]` 的 `api_key` 并保存。旧配置可以直接追加这一段。使用图形配置工具时，可在 **DeepSeek API Key** 输入框填写并保存。 [创建 API Key](https://platform.deepseek.com/api_keys)
 
@@ -111,7 +91,7 @@ api_key =
 
 Key 留空、API 请求失败或答案无效时，程序会保留题目并等待手动作答。`studywisdomh5` 新版弹题、`hike` 课程和图片题仍需手动处理。
 
-##### 作业考试答题模式
+### 作业考试答题模式
 
 填写自己的 DeepSeek API Key 后，根据运行方式启动。
 
@@ -125,15 +105,11 @@ Key 留空、API 请求失败或答案无效时，程序会保留题目并等待
 
 作业页面显示完成率为 100% 时，程序会点击 **暂存作业** 并确认。遇到主观题、无法读取的内容、平台验证或作答出错时，请在浏览器处理当前作业，再关闭窗口继续下一份。请核对答案后自行交卷。
 
-测试命令为 `uv run python -m unittest discover -s tests -v`。设置 `AUTOVISOR_TEST_BROWSER=1` 可运行真实 Chrome 和本地 HTTP 服务的答题测试。设置 `AUTOVISOR_TEST_DEEPSEEK=1` 和 `DEEPSEEK_API_KEY` 可另外测试一次真实 DeepSeek 请求，测试题为 `1 + 1`。
-
-#### 四、发行版下载
+## 四、发行版下载
 
 Windows x64 用户请在发布页下载 `Autovisor-<版本>-windows-amd64.zip`，完整解压后运行 `Autovisor.exe`。macOS 用户可下载同一发布页的源码压缩包，按上文的 macOS 步骤启动。 [GitHub Releases](https://github.com/OyamaMeek/Autovisor/releases)
 
-发布时先更新 `modules/version.py`，将提交推送到 `origin`，再创建并推送与代码版本相同的带注释标签（例如 `3.19.1`）。GitHub Actions 会验证 Windows 构建并发布 ZIP，标签注释用作发行说明。
-
-#### 五、常见问题
+## 五、常见问题
 
 1. 解压后没有 `Autovisor.exe` / 提示缺少依赖文件?
 
@@ -181,14 +157,19 @@ Windows x64 用户请在发布页下载 `Autovisor-<版本>-windows-amd64.zip`�
 
    - 目前只处理视频课时, 非视频章节需要手动切到有视频的课时.
 
-------
-#### 已知问题
+## 已知问题
 
 - **长时间挂机**有概率弹出人机验证, 程序检测到后会暂停操作, 直到手动验证完成;
 - 浏览器窗口若**最小化**可能导致视频播放进度不增加;
 - 若出现其他异常崩溃, 请提交 issue 并附上报错信息.
 
-#### 写在最后
+## 开发与发布
+
+测试命令为 `uv run --locked python -m unittest discover -s tests -v`。设置 `AUTOVISOR_TEST_BROWSER=1` 可运行真实 Chrome 和本地 HTTP 服务的答题测试。设置 `AUTOVISOR_TEST_DEEPSEEK=1` 和 `DEEPSEEK_API_KEY` 可另外测试一次真实 DeepSeek 请求，测试题为 `1 + 1`。
+
+发布前更新 `modules/version.py` 并将提交推送到 `origin`，再创建并推送与代码版本相同的带注释标签。GitHub Actions 会验证 Windows 构建并发布 ZIP，标签注释用作发行说明。
+
+## 写在最后
 
 觉得体验还不错? 请留下你宝贵的 Star ⭐, 并分享给更多有需要的人!
 

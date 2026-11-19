@@ -89,6 +89,6 @@
 - **涉及文件**
   - `config.ini.example`、`config.macos.ini.example`、`modules/configs.py`、`GUI.py`、`tests/test_configs.py`、`memory/`、`docs/CHANGELOG.md`
 
-- **Git 提交** 待提交。
+- **Git 提交** `a0032c39cc5fbd53ee79ad52bcb3e5267aebfc4d fix(config): update course playback defaults`，已推送 `origin/main`。
 
 ---

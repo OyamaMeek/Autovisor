@@ -34,7 +34,7 @@ class Config:
             self.showDonateCode = self.get_bool_field("script-option", "showDonateCode")
             self.deepseek_api_key = self._config.get("deepseek", "api_key", raw=True, fallback="").strip()
             # 课程选项
-            self.soundOff = self.get_bool_field('course-option', 'soundOff')
+            self.soundOff = self.get_bool_field('course-option', 'soundOff', fallback=True)
             self.course_match_rule = re.compile("https://[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]")
             self.course_urls = self.get_course_urls()
         # 登录
@@ -128,5 +128,5 @@ class Config:
     @property
     def limitSpeed(self) -> float:
         self._read_config()
-        speed = self._safe_get_float('course-option', 'limitSpeed', 1.0)
+        speed = self._safe_get_float('course-option', 'limitSpeed', 1.5)
         return min(max(speed, 0.5), 1.8)

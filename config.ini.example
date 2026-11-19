@@ -24,10 +24,10 @@ showDonateCode = True
 api_key =
 
 [course-option]
-;限制每门课程刷课时长/min (不限制:0)
-limitMaxTime = 30
+;限制每门课程运行时长/min (不限制:0)
+limitMaxTime = 0
 ;限定播放倍速 (最高:1.8)
-limitSpeed = 1.0
+limitSpeed = 1.5
 ;设置是否静音播放 (默认:True)
 soundOff = True
 

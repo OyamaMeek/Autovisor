@@ -1,12 +1,39 @@
+import configparser
 import os
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from modules.configs import Config, ConfigError
 
 
 class ConfigTests(unittest.TestCase):
+    def test_course_options_in_templates(self):
+        root = Path(__file__).resolve().parents[1]
+        for name in ("config.ini.example", "config.macos.ini.example"):
+            with self.subTest(template=name):
+                config = Config(root / name)
+                self.assertEqual((config.limitMaxTime, config.limitSpeed, config.soundOff), (0, 1.5, True))
+
+    def test_course_options_use_defaults_and_accept_overrides(self):
+        root = Path(__file__).resolve().parents[1]
+        ini = configparser.ConfigParser()
+        ini.read(root / "config.ini.example", encoding="utf-8")
+        cases = (
+            ({}, (0, 1.5, True)),
+            ({"limitMaxTime": "30", "limitSpeed": "1", "soundOff": "False"}, (30, 1, False)),
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.ini"
+            for options, expected in cases:
+                with self.subTest(options=options):
+                    ini["course-option"] = options
+                    with path.open("w", encoding="utf-8") as file:
+                        ini.write(file)
+                    config = Config(path, root / "data" / "mirrors.json")
+                    self.assertEqual((config.limitMaxTime, config.limitSpeed, config.soundOff), expected)
+
     def test_reports_missing_config_file(self):
         with self.assertRaisesRegex(ConfigError, "未找到配置文件"):
             Config("missing-config.ini")

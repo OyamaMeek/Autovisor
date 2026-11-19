@@ -25,8 +25,8 @@ api_key =
 
 [course-option]
 ;限制每门课程运行时长/min (不限制:0)
-limitMaxTime = 30
-limitSpeed = 1.0
+limitMaxTime = 0
+limitSpeed = 1.5
 soundOff = True
 
 [course-url]

@@ -29,7 +29,7 @@ def show_help():
         "自动跳过验证码：自动完成滑动验证\n"
         "隐藏浏览器窗口：运行时最小化浏览器\n"
         "静音播放：关闭视频声音\n\n"
-        "输入 True 启用，留空或填 False 表示关闭\n\n"
+        "选择 True 启用，选择 False 关闭\n\n"
         "【常见问题】\n"
         "Q: 浏览器启动失败？\n"
         "A: 请尝试双击 Autovisor.exe 运行。"
@@ -125,10 +125,12 @@ course_entry.grid(row=4, column=3)
 
 ttk.Label(frame, text="时长限制：", font=("Microsoft YaHei", 10)).grid(row=5, column=1)
 time_limit_entry = ttk.Entry(frame)
+time_limit_entry.insert(0, config.get('course-option', 'limitMaxTime', fallback='0'))
 time_limit_entry.grid(row=5, column=3)
 
 ttk.Label(frame, text="倍速：", font=("Microsoft YaHei", 10)).grid(row=6, column=1)
 speed_entry = ttk.Entry(frame)
+speed_entry.insert(0, config.get('course-option', 'limitSpeed', fallback='1.5'))
 speed_entry.grid(row=6, column=3)
 
 ttk.Label(frame, text="").grid(row=7, column=1, pady=15)
@@ -136,7 +138,8 @@ ttk.Label(frame, text="").grid(row=7, column=1, pady=15)
 # 初始化选项变量
 verify_var = tk.StringVar(value="False")
 hide_var = tk.StringVar(value="False")
-mute_var = tk.StringVar(value="False")
+mute_enabled = config.get('course-option', 'soundOff', fallback='True').strip().lower() == 'true'
+mute_var = tk.StringVar(value=str(mute_enabled))
 
 # 自动跳过验证码
 ttk.Label(frame, text="可选配置:", font=("Microsoft YaHei", 15)).grid(row=7, column=1)

@@ -76,3 +76,19 @@
 - **Git 提交** `75e798fefb636b2d6e13a8110524da4c2f1669fd feat(login): support Zhihuishu student ID sign-in`，已推送 `origin/main`。
 
 ---
+
+## [2026-11-19 12:18] 更新课程默认设置
+
+- **需求/问题描述**
+  > 默认不限每门课程运行时长，以 1.5 倍速静音播放。
+
+- **实际实现的功能与改动**
+  - 两份配置模板、配置加载器和图形配置工具采用相同的默认值，允许显式配置覆盖。
+  - 配置回归测试与实际 Tk 控件检查通过。启用 Chrome 的全量测试共 122 项，119 项通过，线上 DeepSeek 和两项 Windows 专用用例跳过。Python 语法和差异检查通过。
+
+- **涉及文件**
+  - `config.ini.example`、`config.macos.ini.example`、`modules/configs.py`、`GUI.py`、`tests/test_configs.py`、`memory/`、`docs/CHANGELOG.md`
+
+- **Git 提交** 待提交。
+
+---

@@ -105,6 +105,6 @@
 - **涉及文件**
   - `Autovisor.py`、`modules/configs.py`、`tests/test_answering_integration.py`、`tests/test_configs.py`、`memory/`、`docs/CHANGELOG.md`
 
-- **Git 提交** 待提交。
+- **Git 提交** `77a3d27aaf776cde8ab82cbbd71a160e870ef278 fix(exam): keep browser open after campus navigation timeout`，已推送 `origin/main`。
 
 ---
